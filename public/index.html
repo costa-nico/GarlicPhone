@@ -48,10 +48,18 @@
           </button>
         </div>
         
-        <div class="size-container">
-          <input type="range" id="size-slider" class="vertical-slider" min="1" max="100" value="10" orient="vertical">
-          <div class="size-indicator-wrapper">
-            <div id="size-indicator" class="size-indicator"></div>
+        <div class="sliders-container">
+          <div class="slider-wrapper" title="굵기 조절">
+            <input type="range" id="size-slider" class="vertical-slider" min="1" max="100" value="10" orient="vertical">
+            <div class="indicator-wrapper">
+              <div id="size-indicator" class="size-indicator"></div>
+            </div>
+          </div>
+          <div class="slider-wrapper" title="투명도 조절">
+            <input type="range" id="opacity-slider" class="vertical-slider" min="0.05" max="1" step="0.05" value="1" orient="vertical">
+            <div class="indicator-wrapper">
+              <div id="opacity-indicator" class="opacity-indicator"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -85,6 +93,7 @@
     
     <main class="canvas-container">
       <canvas id="drawing-canvas"></canvas>
+      <canvas id="active-canvas"></canvas>
     </main>
   </div>
   

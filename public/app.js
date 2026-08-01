@@ -2,17 +2,22 @@ document.addEventListener('DOMContentLoaded', () => {
   const canvas = document.getElementById('drawing-canvas');
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
   
+  const activeCanvas = document.getElementById('active-canvas');
+  const activeCtx = activeCanvas.getContext('2d');
+  
   // Logical resolution setup (Fixed 4:3)
   const LOGICAL_WIDTH = 1600;
   const LOGICAL_HEIGHT = 1200;
   canvas.width = LOGICAL_WIDTH;
   canvas.height = LOGICAL_HEIGHT;
+  activeCanvas.width = LOGICAL_WIDTH;
+  activeCanvas.height = LOGICAL_HEIGHT;
   
   // Set context properties
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
+  activeCtx.imageSmoothingEnabled = true;
+  activeCtx.imageSmoothingQuality = 'high';
 
   // Multiplayer State
   const userId = Math.random().toString(36).slice(2, 10);
@@ -72,49 +77,86 @@ document.addEventListener('DOMContentLoaded', () => {
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       activeStrokes = {};
+      drawActiveStrokes();
     } else if (ev.type === 'start') {
       activeStrokes[ev.strokeId] = { ...ev, points: [ev.pos] };
-      ctx.beginPath();
-      ctx.fillStyle = ev.tool === 'eraser' ? '#FFFFFF' : ev.color;
-      ctx.arc(ev.pos.x, ev.pos.y, ev.size / 2, 0, Math.PI * 2);
-      ctx.fill();
+      drawActiveStrokes();
     } else if (ev.type === 'draw') {
       const stroke = activeStrokes[ev.strokeId];
       if (stroke) {
         stroke.points.push(ev.pos);
-        drawStrokeSegment(stroke, stroke.points.length - 1);
+        drawActiveStrokes();
       }
     } else if (ev.type === 'end') {
-      delete activeStrokes[ev.strokeId];
+      if (activeStrokes[ev.strokeId]) {
+        drawSingleStrokeTo(ctx, activeStrokes[ev.strokeId]);
+        delete activeStrokes[ev.strokeId];
+        drawActiveStrokes();
+      }
     } else if (ev.type === 'fill') {
       floodFill(ev.pos.x, ev.pos.y, hexToRgb(ev.color));
     } else if (ev.type === 'square') {
+      ctx.globalAlpha = ev.opacity || 1;
       ctx.strokeStyle = ev.color;
       ctx.lineWidth = ev.size;
       ctx.lineCap = 'square';
       ctx.lineJoin = 'miter';
       ctx.strokeRect(ev.startPos.x, ev.startPos.y, ev.endPos.x - ev.startPos.x, ev.endPos.y - ev.startPos.y);
+      ctx.globalAlpha = 1;
     }
   }
 
-  function drawStrokeSegment(stroke, index) {
-    const points = stroke.points;
-    ctx.strokeStyle = stroke.tool === 'eraser' ? '#FFFFFF' : stroke.color;
-    ctx.lineWidth = stroke.size;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
+  function drawSingleStrokeTo(targetCtx, stroke) {
+    if (!stroke || stroke.points.length === 0) return;
+    targetCtx.globalAlpha = stroke.opacity || 1;
+    targetCtx.strokeStyle = stroke.tool === 'eraser' ? '#FFFFFF' : stroke.color;
+    targetCtx.lineWidth = stroke.size;
+    targetCtx.lineCap = 'round';
+    targetCtx.lineJoin = 'round';
     
-    if (points.length >= 3 && index >= 2) {
-      const pt1 = points[index - 2], pt2 = points[index - 1], pt3 = points[index];
-      const mid1 = { x: (pt1.x + pt2.x)/2, y: (pt1.y + pt2.y)/2 };
-      const mid2 = { x: (pt2.x + pt3.x)/2, y: (pt2.y + pt3.y)/2 };
-      ctx.beginPath(); ctx.moveTo(mid1.x, mid1.y);
-      ctx.quadraticCurveTo(pt2.x, pt2.y, mid2.x, mid2.y); ctx.stroke();
-    } else if (points.length === 2 && index === 1) {
-      const pt1 = points[0], pt2 = points[1];
-      const mid = { x: (pt1.x + pt2.x)/2, y: (pt1.y + pt2.y)/2 };
-      ctx.beginPath(); ctx.moveTo(pt1.x, pt1.y);
-      ctx.lineTo(mid.x, mid.y); ctx.stroke();
+    if (stroke.tool === 'eraser') {
+      targetCtx.globalCompositeOperation = 'destination-out';
+      targetCtx.globalAlpha = 1; // Erasers fully cut out
+    } else {
+      targetCtx.globalCompositeOperation = 'source-over';
+    }
+
+    targetCtx.beginPath();
+    const pts = stroke.points;
+    targetCtx.moveTo(pts[0].x, pts[0].y);
+    
+    if (pts.length === 1) {
+      targetCtx.fillStyle = targetCtx.strokeStyle;
+      targetCtx.arc(pts[0].x, pts[0].y, stroke.size / 2, 0, Math.PI * 2);
+      targetCtx.fill();
+    } else {
+      for (let i = 1; i < pts.length - 1; i++) {
+        let midX = (pts[i].x + pts[i+1].x) / 2;
+        let midY = (pts[i].y + pts[i+1].y) / 2;
+        targetCtx.quadraticCurveTo(pts[i].x, pts[i].y, midX, midY);
+      }
+      targetCtx.lineTo(pts[pts.length-1].x, pts[pts.length-1].y);
+      targetCtx.stroke();
+    }
+    
+    targetCtx.globalAlpha = 1;
+    targetCtx.globalCompositeOperation = 'source-over';
+  }
+
+  function drawActiveStrokes() {
+    activeCtx.clearRect(0, 0, activeCanvas.width, activeCanvas.height);
+    Object.values(activeStrokes).forEach(stroke => {
+      drawSingleStrokeTo(activeCtx, stroke);
+    });
+    
+    if (previewShape) {
+      activeCtx.globalAlpha = previewShape.opacity || 1;
+      activeCtx.strokeStyle = previewShape.color;
+      activeCtx.lineWidth = previewShape.size;
+      activeCtx.lineCap = 'square';
+      activeCtx.lineJoin = 'miter';
+      activeCtx.strokeRect(previewShape.startPos.x, previewShape.startPos.y, previewShape.endPos.x - previewShape.startPos.x, previewShape.endPos.y - previewShape.startPos.y);
+      activeCtx.globalAlpha = 1;
     }
   }
 
@@ -125,6 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
     for (let ev of eventsHistory) {
       processEvent(ev);
     }
+    drawActiveStrokes(); // In case anyone is actively drawing right now
   }
 
   // --- Local Drawing State ---
@@ -132,6 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentTool = 'pen';
   let currentColor = '#000000';
   let currentSize = 8;
+  let currentOpacity = 1;
   let currentStrokeId = null;
   let startPos = null;
 
@@ -240,7 +284,7 @@ document.addEventListener('DOMContentLoaded', () => {
     myRedoStack = []; // Clear redo stack on new action
     
     if (currentTool === 'fill') {
-      emitAndProcess({ type: 'fill', strokeId: currentStrokeId, userId, color: currentColor, pos: startPos });
+      emitAndProcess({ type: 'fill', strokeId: currentStrokeId, userId, color: currentColor, opacity: currentOpacity, pos: startPos });
       myStrokes.push(currentStrokeId);
       isDrawing = false;
       return;
@@ -249,13 +293,13 @@ document.addEventListener('DOMContentLoaded', () => {
       canvas.setPointerCapture(e.pointerId);
       return;
     } else if (currentTool !== 'square') {
-      emitAndProcess({ type: 'start', strokeId: currentStrokeId, userId, tool: currentTool, color: currentColor, size: currentSize, pos: startPos });
+      emitAndProcess({ type: 'start', strokeId: currentStrokeId, userId, tool: currentTool, color: currentColor, opacity: currentOpacity, size: currentSize, pos: startPos });
       myStrokes.push(currentStrokeId);
     }
     canvas.setPointerCapture(e.pointerId);
   }
 
-  let savedStateBeforeShape = null; // Temp state for local square preview
+  let previewShape = null; // Temp state for local square preview
 
   let lastCursorSend = 0;
   function draw(e) {
@@ -279,14 +323,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     if (currentTool === 'square') {
       // Local preview only, no broadcast yet
-      if (!savedStateBeforeShape) savedStateBeforeShape = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const currentPos = getCoordinates(e);
-      ctx.putImageData(savedStateBeforeShape, 0, 0);
-      ctx.strokeStyle = currentColor;
-      ctx.lineWidth = currentSize;
-      ctx.lineCap = 'square';
-      ctx.lineJoin = 'miter';
-      ctx.strokeRect(startPos.x, startPos.y, currentPos.x - startPos.x, currentPos.y - startPos.y);
+      previewShape = { color: currentColor, opacity: currentOpacity, size: currentSize, startPos, endPos: currentPos };
+      drawActiveStrokes();
       return;
     }
     
@@ -309,10 +348,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     if (currentTool === 'square') {
       const endPos = getCoordinates(e);
-      savedStateBeforeShape = null; // Clear preview temp
-      // Restore without the temp drawing to cleanly apply via emitAndProcess
-      renderHistory(); 
-      emitAndProcess({ type: 'square', strokeId: currentStrokeId, userId, color: currentColor, size: currentSize, startPos, endPos });
+      previewShape = null; // Clear preview temp
+      drawActiveStrokes(); // Clean active canvas
+      emitAndProcess({ type: 'square', strokeId: currentStrokeId, userId, color: currentColor, opacity: currentOpacity, size: currentSize, startPos, endPos });
       myStrokes.push(currentStrokeId);
       isDrawing = false;
       canvas.releasePointerCapture(e.pointerId);
@@ -489,5 +527,24 @@ document.addEventListener('DOMContentLoaded', () => {
       updateSize(e.target.value);
     });
     updateSize(currentSize);
+  }
+
+  // Opacity
+  const opacitySlider = document.getElementById('opacity-slider');
+  const opacityIndicator = document.getElementById('opacity-indicator');
+  
+  function updateOpacity(val) {
+    currentOpacity = parseFloat(val);
+    if (opacitySlider) opacitySlider.value = currentOpacity;
+    if (opacityIndicator) {
+      opacityIndicator.style.opacity = currentOpacity;
+    }
+  }
+
+  if (opacitySlider) {
+    opacitySlider.addEventListener('input', (e) => {
+      updateOpacity(e.target.value);
+    });
+    updateOpacity(currentOpacity);
   }
 });

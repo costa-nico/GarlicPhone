@@ -88,11 +88,21 @@ body {
   width: 55%; /* Reduced to force 1:1 height to be smaller, preventing overflow */
 }
 
-.size-container {
-  width: 35%;
+.sliders-container {
+  width: 40%;
+  display: flex;
+  justify-content: space-around;
   background-color: #e8e8ed;
   border-radius: 1cqw;
-  position: relative; /* Absolute children to ignore intrinsic height */
+  position: relative;
+}
+
+.slider-wrapper {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 /* Vertical slider styling */
@@ -113,7 +123,7 @@ body {
   accent-color: var(--accent-color);
 }
 
-.size-indicator-wrapper {
+.indicator-wrapper {
   position: absolute;
   bottom: 1.5cqw;
   left: 0;
@@ -130,6 +140,14 @@ body {
   background-color: var(--accent-color);
   border-radius: 50%;
   transition: transform 0.1s;
+}
+
+.opacity-indicator {
+  width: 1.5cqw;
+  height: 1.5cqw;
+  background-color: var(--accent-color);
+  border-radius: 0.2cqw;
+  transition: opacity 0.1s;
 }
 
 .toolbar-bottom {
@@ -270,11 +288,20 @@ button {
   border-left: 0.2cqw solid #ddd;
 }
 
-canvas {
+#drawing-canvas, #active-canvas {
   display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   cursor: crosshair;
   /* Anti-aliasing enabled: smoothly scale the 1600x1200 logical canvas to CSS size */
   image-rendering: auto;
+}
+
+#active-canvas {
+  pointer-events: none;
+  z-index: 2;
+  background-color: transparent;
 }
