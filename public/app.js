@@ -124,11 +124,12 @@ document.addEventListener('DOMContentLoaded', () => {
       targetCtx.fillStyle = '#FFFFFF';
       targetCtx.fillRect(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT);
     } else if (item.type === 'lasso_paste') {
-      // 1. Fill original cutout area with white
+      // 1. Fill original cutout area (srcPath) with white
       targetCtx.save();
       targetCtx.beginPath();
-      if (item.path && item.path.length > 0) {
-        item.path.forEach((pt, idx) => {
+      const path = item.srcPath || item.path;
+      if (path && path.length > 0) {
+        path.forEach((pt, idx) => {
           if (idx === 0) targetCtx.moveTo(pt.x, pt.y);
           else targetCtx.lineTo(pt.x, pt.y);
         });
@@ -139,13 +140,16 @@ document.addEventListener('DOMContentLoaded', () => {
       targetCtx.fillRect(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT);
       targetCtx.restore();
       
-      // 2. Draw cutout image
+      // 2. Draw cutout image at new destination
       if (!item._img) {
         item._img = new Image();
-        item._img.onload = () => renderHistory();
+        item._img.onload = () => {
+          targetCtx.drawImage(item._img, item.dstPos.x, item.dstPos.y);
+          drawActiveStrokes();
+        };
         item._img.src = item.dataUrl;
       }
-      if (item._img.complete) {
+      if (item._img.complete && item._img.naturalWidth !== 0) {
         targetCtx.drawImage(item._img, item.dstPos.x, item.dstPos.y);
       }
     }
@@ -269,6 +273,22 @@ document.addEventListener('DOMContentLoaded', () => {
     for (let i = startIndex; i < eventsHistory.length; i++) {
       drawHistoryItem(ctx, eventsHistory[i]);
     }
+
+    // Mask out original lasso selection area so history replay NEVER restores original image underneath
+    if ((lassoState === 'selected' || lassoState === 'dragging') && originalLassoPath.length > 0) {
+      ctx.save();
+      ctx.beginPath();
+      originalLassoPath.forEach((pt, idx) => {
+        if (idx === 0) ctx.moveTo(pt.x, pt.y);
+        else ctx.lineTo(pt.x, pt.y);
+      });
+      ctx.closePath();
+      ctx.clip();
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT);
+      ctx.restore();
+    }
+
     drawActiveStrokes();
   }
 
@@ -286,6 +306,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- Lasso Tool State ---
   let lassoState = 'idle'; // 'idle', 'selecting', 'selected', 'dragging'
   let lassoPath = [];
+  let originalLassoPath = []; // Stores original un-offset selection path for clearing source
   let lassoCutoutCanvas = null;
   let lassoBoundingBox = null; // { minX, minY, maxX, maxY }
   let lassoDragStart = null;
@@ -310,7 +331,7 @@ document.addEventListener('DOMContentLoaded', () => {
       userId,
       dataUrl: lassoCutoutCanvas.toDataURL(),
       dstPos: { x: finalX, y: finalY },
-      path: lassoPath.map(pt => ({ x: pt.x + lassoDragOffset.x, y: pt.y + lassoDragOffset.y }))
+      srcPath: originalLassoPath // Preserve original selection path for clearing source
     };
     
     emitAndProcess(strokeObj);
@@ -322,6 +343,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function resetLasso() {
     lassoState = 'idle';
     lassoPath = [];
+    originalLassoPath = [];
     lassoCutoutCanvas = null;
     lassoBoundingBox = null;
     lassoDragStart = null;
@@ -591,6 +613,7 @@ document.addEventListener('DOMContentLoaded', () => {
           
           if (width >= 5 && height >= 5) {
             lassoBoundingBox = { minX, minY, maxX, maxY, width, height };
+            originalLassoPath = JSON.parse(JSON.stringify(lassoPath)); // Clone original path
             
             lassoCutoutCanvas = document.createElement('canvas');
             lassoCutoutCanvas.width = width;
