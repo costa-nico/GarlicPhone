@@ -28,14 +28,17 @@ wss.on('connection', (ws) => {
       const msg = JSON.parse(messageStr);
       
       if (msg.type === 'cursor') {
-        users[msg.id] = { ...users[msg.id], cursor: msg.pos, name: msg.name };
+        ws.userId = msg.id;
+        users[msg.id] = { cursor: msg.pos, name: msg.name, color: msg.color };
         broadcast(messageStr, ws);
         return;
       }
       
       if (msg.type === 'disconnect') {
-        delete users[msg.id];
-        broadcast(messageStr, ws);
+        if (msg.id) {
+          delete users[msg.id];
+          broadcast(messageStr, ws);
+        }
         return;
       }
 
@@ -58,6 +61,10 @@ wss.on('connection', (ws) => {
 
   ws.on('close', () => {
     console.log('Client disconnected:', connId);
+    if (ws.userId) {
+      delete users[ws.userId];
+      broadcast(JSON.stringify({ type: 'disconnect', id: ws.userId }));
+    }
   });
 });
 

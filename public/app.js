@@ -51,7 +51,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (msg.type === 'sync') {
       eventsHistory = msg.history;
       renderHistory();
-      // Handle remote cursors
+      // Remove stale remote cursors that are no longer active
+      Object.keys(remoteCursors).forEach(id => {
+        if (!msg.users || !msg.users[id]) {
+          removeRemoteCursor(id);
+        }
+      });
+      // Handle active remote cursors
       Object.keys(msg.users || {}).forEach(id => {
         if (id !== userId) updateRemoteCursor(id, msg.users[id]);
       });
@@ -1001,4 +1007,8 @@ document.addEventListener('DOMContentLoaded', () => {
       userColor = e.target.value;
     });
   }
+
+  window.addEventListener('beforeunload', () => {
+    broadcast({ type: 'disconnect', id: userId });
+  });
 });
