@@ -1,0 +1,280 @@
+:root {
+  --bg-color: #222222; /* Letterbox background */
+  --toolbar-bg: #f4f4f9;
+  --canvas-bg: #ffffff;
+  --accent-color: #007AFF;
+  --border-radius: 12px;
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  touch-action: none;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--bg-color);
+  background-image: url('images.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  color: #333;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+/* 16:9 container that scales to fit the screen */
+.app-container {
+  display: flex;
+  flex-direction: row; /* Toolbar left, canvas right */
+  width: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  aspect-ratio: 16 / 9;
+  background-color: var(--toolbar-bg);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  /* Make it a CSS Container to scale inner UI proportionally */
+  container-type: size;
+}
+
+/* Ensure the app-container keeps aspect ratio but fits inside viewport */
+@media (min-aspect-ratio: 16/9) {
+  .app-container {
+    height: 95vh;
+    width: auto;
+  }
+}
+@media (max-aspect-ratio: 16/9) {
+  .app-container {
+    width: 95vw;
+    height: auto;
+  }
+}
+
+.toolbar {
+  display: flex;
+  flex-direction: column;
+  width: 25%; /* 4 parts of 16 */
+  background-color: var(--toolbar-bg);
+  padding: 1.5cqw;
+  gap: 1.5cqw;
+  align-items: stretch;
+  justify-content: start;
+  overflow: hidden; /* Math guarantees it fits now */
+}
+
+.toolbar-top {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 1cqw;
+  flex: 0 0 auto;
+}
+
+.tools-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-auto-rows: min-content;
+  gap: 0.5cqw;
+  width: 55%; /* Reduced to force 1:1 height to be smaller, preventing overflow */
+}
+
+.size-container {
+  width: 35%;
+  background-color: #e8e8ed;
+  border-radius: 1cqw;
+  position: relative; /* Absolute children to ignore intrinsic height */
+}
+
+/* Vertical slider styling */
+.vertical-slider {
+  writing-mode: bt-lr; /* IE */
+  -webkit-appearance: slider-vertical; /* WebKit */
+  appearance: slider-vertical;
+  
+  position: absolute;
+  top: 1.5cqw;
+  bottom: 4cqw;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1.5cqw;
+  margin: 0;
+  
+  outline: none;
+  accent-color: var(--accent-color);
+}
+
+.size-indicator-wrapper {
+  position: absolute;
+  bottom: 1.5cqw;
+  left: 0;
+  right: 0;
+  height: 2cqw;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.size-indicator {
+  width: 1cqw;
+  height: 1cqw;
+  background-color: var(--accent-color);
+  border-radius: 50%;
+  transition: transform 0.1s;
+}
+
+.toolbar-bottom {
+  display: flex;
+  flex-direction: column;
+  gap: 1cqw;
+  flex: 1; /* Take up any remaining space naturally */
+  justify-content: start;
+  align-items: center; /* Center the narrower grid */
+}
+
+.palette-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.4cqw;
+  width: 85%; /* Reduced to fit 1:1 height in the layout */
+}
+
+.current-color-display {
+  grid-column: span 4;
+  width: 100%;
+  height: 2.5cqw;
+  border: 0.2cqw solid #ccc;
+  border-radius: 0.5cqw;
+  padding: 0;
+  cursor: pointer;
+  background-color: transparent;
+  outline: none;
+}
+/* Specifically target the inner color block across browsers */
+.current-color-display::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+.current-color-display::-webkit-color-swatch {
+  border: none;
+  border-radius: 0.3cqw;
+}
+.current-color-display::-moz-color-swatch {
+  border: none;
+  border-radius: 0.3cqw;
+}
+
+button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  outline: none;
+  border-radius: 0.5cqw;
+  transition: all 0.1s ease;
+}
+
+.tool-btn {
+  --bg: #e8e8ed;
+  --bg-dark: #c8c8cf;
+  --text-color: #555;
+  
+  position: relative;
+  background-color: var(--bg);
+  color: var(--text-color);
+  border-radius: 1cqw;
+  border: none;
+  
+  width: 100%;
+  aspect-ratio: 1; /* Perfect square */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5cqw;
+  
+  /* 3D button physics */
+  transition: 0.1s ease-in-out;
+  top: 0;
+  box-shadow: var(--bg-dark) 0px 0.4cqw 0px, rgba(0, 0, 0, 0.15) 0px 0.6cqw 0.4cqw;
+  cursor: pointer;
+}
+
+.tool-btn svg {
+  width: 40%;
+  height: 40%;
+  stroke: currentColor;
+}
+
+.tool-label {
+  font-size: 1cqw;
+  font-weight: 800;
+  text-align: center;
+  letter-spacing: 0.05cqw;
+}
+
+.tool-btn:hover {
+  filter: brightness(1.03);
+}
+
+/* Pressed state for clicking */
+.tool-btn:active {
+  top: 0.4cqw;
+  box-shadow: var(--bg-dark) 0px 0px 0px, rgba(0, 0, 0, 0.15) 0px 0.2cqw 0.2cqw;
+}
+
+/* Selected state (stays pressed in) */
+.tool-btn.active {
+  --bg: var(--accent-color);
+  --bg-dark: #005bb5;
+  --text-color: #ffffff;
+  top: 0.4cqw;
+  box-shadow: var(--bg-dark) 0px 0px 0px, rgba(0, 0, 0, 0.15) 0px 0.2cqw 0.2cqw;
+}
+
+.color-btn {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 0.3cqw;
+  border: 0.1cqw solid rgba(0,0,0,0.2);
+  cursor: pointer;
+  transition: 0.1s ease-in-out;
+  position: relative;
+  top: 0;
+  box-shadow: inset 0 -0.4cqw 0 rgba(0,0,0,0.3), rgba(0,0,0,0.15) 0px 0.6cqw 0.4cqw;
+}
+
+.color-btn:hover {
+  filter: brightness(1.1);
+}
+
+.color-btn:active, .color-btn.active {
+  top: 0.4cqw;
+  border-color: #333;
+  box-shadow: inset 0 -0.1cqw 0 rgba(0,0,0,0.3), rgba(0,0,0,0.15) 0px 0.2cqw 0.2cqw;
+  z-index: 2;
+}
+
+.canvas-container {
+  width: 75%; /* 12 parts of 16 (12:9 == 4:3) */
+  height: 100%;
+  background-color: var(--canvas-bg);
+  position: relative;
+  border-left: 0.2cqw solid #ddd;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: crosshair;
+  /* Anti-aliasing enabled: smoothly scale the 1600x1200 logical canvas to CSS size */
+  image-rendering: auto;
+}
