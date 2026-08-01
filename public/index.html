@@ -88,12 +88,18 @@
           <button class="color-btn" data-color="#F4A460" style="background-color: #F4A460;"></button>
           <button class="color-btn" data-color="#FFE4B5" style="background-color: #FFE4B5;"></button>
         </div>
+        
+        <div class="user-profile-bar" title="프로필 설정 (닉네임 및 네임태그 색상)">
+          <input type="color" id="user-color-picker" class="user-color-picker" value="#FF3B30" title="네임태그 색상 선택">
+          <input type="text" id="user-name-input" class="user-name-input" value="익명" placeholder="닉네임" maxlength="12" title="닉네임 변경">
+        </div>
       </div>
     </header>
     
     <main class="canvas-container">
       <canvas id="drawing-canvas"></canvas>
       <canvas id="active-canvas"></canvas>
+      <div id="brush-preview" class="brush-preview"></div>
     </main>
   </div>
   

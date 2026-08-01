@@ -166,6 +166,46 @@ body {
   width: 85%; /* Reduced to fit 1:1 height in the layout */
 }
 
+.user-profile-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5cqw;
+  width: 85%;
+  margin-top: 0.3cqw;
+  background-color: #e8e8ed;
+  padding: 0.4cqw 0.6cqw;
+  border-radius: 0.8cqw;
+}
+
+.user-color-picker {
+  width: 2cqw;
+  height: 2cqw;
+  border: 0.1cqw solid #ccc;
+  border-radius: 0.4cqw;
+  padding: 0;
+  cursor: pointer;
+  background: transparent;
+  outline: none;
+}
+.user-color-picker::-webkit-color-swatch-wrapper { padding: 0; }
+.user-color-picker::-webkit-color-swatch { border: none; border-radius: 0.3cqw; }
+
+.user-name-input {
+  flex: 1;
+  width: 100%;
+  border: 0.1cqw solid #ccc;
+  background: white;
+  border-radius: 0.4cqw;
+  padding: 0.3cqw 0.5cqw;
+  font-size: 0.85cqw;
+  font-weight: 700;
+  color: #333;
+  outline: none;
+}
+.user-name-input:focus {
+  border-color: var(--accent-color);
+}
+
 .current-color-display {
   grid-column: span 4;
   width: 100%;
@@ -295,13 +335,27 @@ button {
   left: 0;
   width: 100%;
   height: 100%;
-  cursor: crosshair;
+  cursor: none;
   /* Anti-aliasing enabled: smoothly scale the 1600x1200 logical canvas to CSS size */
   image-rendering: auto;
 }
 
 #active-canvas {
-  pointer-events: none;
+  pointer-events: auto; /* Enable mouse events on canvas container */
   z-index: 2;
   background-color: transparent;
+}
+
+.brush-preview {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 50%;
+  border: 1.5px solid rgba(0, 0, 0, 0.8);
+  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.8);
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  z-index: 100;
+  display: none;
+  transition: width 0.05s ease, height 0.05s ease;
 }

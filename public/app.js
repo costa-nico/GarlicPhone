@@ -19,9 +19,18 @@ document.addEventListener('DOMContentLoaded', () => {
   activeCtx.imageSmoothingEnabled = true;
   activeCtx.imageSmoothingQuality = 'high';
 
+  // Snapshot Checkpoint Cache (Non-destructive rendering acceleration)
+  const snapshotCanvas = document.createElement('canvas');
+  snapshotCanvas.width = LOGICAL_WIDTH;
+  snapshotCanvas.height = LOGICAL_HEIGHT;
+  const snapshotCtx = snapshotCanvas.getContext('2d');
+  let checkpointIndex = -1; // History index covered by the snapshot canvas
+
   // Multiplayer State
-  const userId = Math.random().toString(36).slice(2, 10);
-  const userName = prompt("사용할 닉네임을 입력하세요", "익명") || "익명";
+  const userId = Math.random().toString(36).slice(2, 10); // Differentiated by unique random ID!
+  const vibrantColors = ['#FF3B30', '#FF9500', '#FFCC00', '#4CD964', '#5AC8FA', '#007AFF', '#5856D6', '#FF2D55'];
+  let userColor = vibrantColors[Math.floor(Math.random() * vibrantColors.length)];
+  let userName = "익명" + Math.floor(Math.random() * 90 + 10);
   
   let eventsHistory = [];
   let myStrokes = []; // Track my own stroke IDs for Undo
@@ -72,37 +81,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- Rendering Engine ---
   
-  function processEvent(ev, skipActiveRedraw = false) {
+  function processEvent(ev) {
     if (ev.type === 'clear') {
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       activeStrokes = {};
-      if (!skipActiveRedraw) drawActiveStrokes();
-    } else if (ev.type === 'start') {
-      activeStrokes[ev.strokeId] = { ...ev, points: [ev.pos] };
+      drawActiveStrokes();
+    } else if (ev.type === 'draw_live') {
+      if (!activeStrokes[ev.strokeId]) {
+        activeStrokes[ev.strokeId] = { strokeId: ev.strokeId, tool: ev.tool, color: ev.color, opacity: ev.opacity, size: ev.size, points: [ev.pos] };
+      } else {
+        activeStrokes[ev.strokeId].points.push(ev.pos);
+      }
       if (ev.tool === 'eraser') {
         drawSingleStrokeTo(ctx, activeStrokes[ev.strokeId]);
       } else {
-        if (!skipActiveRedraw) drawActiveStrokes();
+        drawActiveStrokes();
       }
-    } else if (ev.type === 'draw') {
-      const stroke = activeStrokes[ev.strokeId];
-      if (stroke) {
-        stroke.points.push(ev.pos);
-        if (stroke.tool === 'eraser') {
-          drawSingleStrokeTo(ctx, stroke);
-        } else {
-          if (!skipActiveRedraw) drawActiveStrokes();
-        }
-      }
-    } else if (ev.type === 'end') {
-      if (activeStrokes[ev.strokeId]) {
-        if (activeStrokes[ev.strokeId].tool !== 'eraser') {
-          drawSingleStrokeTo(ctx, activeStrokes[ev.strokeId]);
-        }
-        delete activeStrokes[ev.strokeId];
-        if (!skipActiveRedraw) drawActiveStrokes();
-      }
+    } else if (ev.type === 'stroke') {
+      drawSingleStrokeTo(ctx, ev);
+      delete activeStrokes[ev.strokeId];
+      drawActiveStrokes();
     } else if (ev.type === 'fill') {
       floodFill(ev.pos.x, ev.pos.y, hexToRgb(ev.color));
     } else if (ev.type === 'square') {
@@ -118,18 +117,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function drawSingleStrokeTo(targetCtx, stroke) {
     if (!stroke || stroke.points.length === 0) return;
-    targetCtx.globalAlpha = stroke.opacity || 1;
+    targetCtx.globalAlpha = stroke.tool === 'eraser' ? 1 : (stroke.opacity || 1);
     targetCtx.strokeStyle = stroke.tool === 'eraser' ? '#FFFFFF' : stroke.color;
     targetCtx.lineWidth = stroke.size;
     targetCtx.lineCap = 'round';
     targetCtx.lineJoin = 'round';
-    
-    if (stroke.tool === 'eraser') {
-      targetCtx.globalCompositeOperation = 'destination-out';
-      targetCtx.globalAlpha = 1; // Erasers fully cut out
-    } else {
-      targetCtx.globalCompositeOperation = 'source-over';
-    }
+    targetCtx.globalCompositeOperation = 'source-over';
 
     targetCtx.beginPath();
     const pts = stroke.points;
@@ -170,21 +163,84 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function renderHistory() {
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    activeStrokes = {};
-    for (let ev of eventsHistory) {
-      processEvent(ev, true);
+  function buildSnapshotCheckpoint() {
+    // Take a snapshot every 30 stroke events to keep replay time under 0.1ms
+    const CHECKPOINT_INTERVAL = 30;
+    if (eventsHistory.length < CHECKPOINT_INTERVAL) {
+      checkpointIndex = -1;
+      return;
     }
-    drawActiveStrokes(); // In case anyone is actively drawing right now
+    
+    const targetIndex = Math.floor(eventsHistory.length / CHECKPOINT_INTERVAL) * CHECKPOINT_INTERVAL - 1;
+    if (targetIndex === checkpointIndex) return; // Already up to date
+    
+    snapshotCtx.fillStyle = '#FFFFFF';
+    snapshotCtx.fillRect(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT);
+    for (let i = 0; i <= targetIndex; i++) {
+      const item = eventsHistory[i];
+      if (item.type === 'stroke') {
+        drawSingleStrokeTo(snapshotCtx, item);
+      } else if (item.type === 'fill') {
+        floodFill(item.pos.x, item.pos.y, hexToRgb(item.color), snapshotCtx);
+      } else if (item.type === 'square') {
+        snapshotCtx.globalAlpha = item.opacity || 1;
+        snapshotCtx.strokeStyle = item.color;
+        snapshotCtx.lineWidth = item.size;
+        snapshotCtx.lineCap = 'square';
+        snapshotCtx.lineJoin = 'miter';
+        snapshotCtx.strokeRect(item.startPos.x, item.startPos.y, item.endPos.x - item.startPos.x, item.endPos.y - item.startPos.y);
+        snapshotCtx.globalAlpha = 1;
+      } else if (item.type === 'clear') {
+        snapshotCtx.fillStyle = '#FFFFFF';
+        snapshotCtx.fillRect(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT);
+      }
+    }
+    checkpointIndex = targetIndex;
+  }
+
+  function renderHistory() {
+    activeStrokes = {};
+    buildSnapshotCheckpoint();
+    
+    let startIndex = 0;
+    if (checkpointIndex >= 0 && checkpointIndex < eventsHistory.length) {
+      ctx.drawImage(snapshotCanvas, 0, 0);
+      startIndex = checkpointIndex + 1;
+    } else {
+      checkpointIndex = -1;
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    
+    for (let i = startIndex; i < eventsHistory.length; i++) {
+      const item = eventsHistory[i];
+      if (item.type === 'stroke') {
+        drawSingleStrokeTo(ctx, item);
+      } else if (item.type === 'fill') {
+        floodFill(item.pos.x, item.pos.y, hexToRgb(item.color));
+      } else if (item.type === 'square') {
+        ctx.globalAlpha = item.opacity || 1;
+        ctx.strokeStyle = item.color;
+        ctx.lineWidth = item.size;
+        ctx.lineCap = 'square';
+        ctx.lineJoin = 'miter';
+        ctx.strokeRect(item.startPos.x, item.startPos.y, item.endPos.x - item.startPos.x, item.endPos.y - item.startPos.y);
+        ctx.globalAlpha = 1;
+      } else if (item.type === 'clear') {
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+    drawActiveStrokes();
   }
 
   // --- Local Drawing State ---
   let isDrawing = false;
   let currentTool = 'pen';
   let currentColor = '#000000';
-  let currentSize = 8;
+  let penSize = 8;
+  let eraserSize = 30;
+  let currentSize = penSize;
   let currentOpacity = 1;
   let currentStrokeId = null;
   let startPos = null;
@@ -251,10 +307,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function floodFill(startX, startY, fillColor) {
+  function floodFill(startX, startY, fillColor, targetCtx = ctx) {
     startX = Math.floor(startX);
     startY = Math.floor(startY);
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const imageData = targetCtx.getImageData(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT);
     const data = imageData.data;
     const width = imageData.width;
     const height = imageData.height;
@@ -293,7 +349,7 @@ document.addEventListener('DOMContentLoaded', () => {
         pos += 4;
       }
     }
-    ctx.putImageData(imageData, 0, 0);
+    targetCtx.putImageData(imageData, 0, 0);
   }
 
   // Pointer Events
@@ -316,8 +372,21 @@ document.addEventListener('DOMContentLoaded', () => {
       canvas.setPointerCapture(e.pointerId);
       return;
     } else if (currentTool !== 'square') {
-      emitAndProcess({ type: 'start', strokeId: currentStrokeId, userId, tool: currentTool, color: currentColor, opacity: currentOpacity, size: currentSize, pos: startPos });
-      myStrokes.push(currentStrokeId);
+      activeStrokes[currentStrokeId] = {
+        strokeId: currentStrokeId,
+        userId,
+        tool: currentTool,
+        color: currentColor,
+        opacity: currentOpacity,
+        size: currentSize,
+        points: [startPos]
+      };
+      if (currentTool === 'eraser') {
+        drawSingleStrokeTo(ctx, activeStrokes[currentStrokeId]);
+      } else {
+        drawActiveStrokes();
+      }
+      broadcast({ type: 'draw_live', strokeId: currentStrokeId, tool: currentTool, color: currentColor, opacity: currentOpacity, size: currentSize, pos: startPos });
     }
     canvas.setPointerCapture(e.pointerId);
   }
@@ -331,7 +400,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (normPos.x >= 0 && normPos.x <= 1 && normPos.y >= 0 && normPos.y <= 1) {
       const now = Date.now();
       if (now - lastCursorSend > 50) {
-        broadcast({ type: 'cursor', id: userId, name: userName, pos: normPos });
+        broadcast({ type: 'cursor', id: userId, name: userName, color: userColor, pos: normPos });
         lastCursorSend = now;
       }
     }
@@ -349,13 +418,24 @@ document.addEventListener('DOMContentLoaded', () => {
       const currentPos = getCoordinates(e);
       previewShape = { color: currentColor, opacity: currentOpacity, size: currentSize, startPos, endPos: currentPos };
       drawActiveStrokes();
+      updateBrushPreview(e);
       return;
     }
+    
+    updateBrushPreview(e);
     
     const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
     for (let ev of events) {
       const pos = getCoordinates(ev);
-      emitAndProcess({ type: 'draw', strokeId: currentStrokeId, pos });
+      if (activeStrokes[currentStrokeId]) {
+        activeStrokes[currentStrokeId].points.push(pos);
+        if (currentTool === 'eraser') {
+          drawSingleStrokeTo(ctx, activeStrokes[currentStrokeId]);
+        } else {
+          drawActiveStrokes();
+        }
+        broadcast({ type: 'draw_live', strokeId: currentStrokeId, tool: currentTool, color: currentColor, opacity: currentOpacity, size: currentSize, pos });
+      }
     }
   }
 
@@ -380,15 +460,71 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     
-    emitAndProcess({ type: 'end', strokeId: currentStrokeId });
+    if (activeStrokes[currentStrokeId]) {
+      const strokeObj = {
+        type: 'stroke',
+        strokeId: currentStrokeId,
+        userId,
+        tool: activeStrokes[currentStrokeId].tool,
+        color: activeStrokes[currentStrokeId].color,
+        opacity: activeStrokes[currentStrokeId].opacity,
+        size: activeStrokes[currentStrokeId].size,
+        points: activeStrokes[currentStrokeId].points
+      };
+      delete activeStrokes[currentStrokeId];
+      drawActiveStrokes();
+      emitAndProcess(strokeObj);
+      myStrokes.push(currentStrokeId);
+    }
+    
     isDrawing = false;
     canvas.releasePointerCapture(e.pointerId);
   }
 
-  canvas.addEventListener('pointerdown', startDrawing);
-  canvas.addEventListener('pointermove', draw);
-  canvas.addEventListener('pointerup', stopDrawing);
-  canvas.addEventListener('pointercancel', stopDrawing);
+  activeCanvas.addEventListener('pointerdown', startDrawing);
+  activeCanvas.addEventListener('pointermove', draw);
+  activeCanvas.addEventListener('pointerup', stopDrawing);
+  activeCanvas.addEventListener('pointercancel', stopDrawing);
+
+  // Brush Preview Cursor UI
+  const brushPreview = document.getElementById('brush-preview');
+
+  function updateBrushPreview(e) {
+    if (!brushPreview) return;
+    const rect = canvas.getBoundingClientRect();
+    const scale = rect.width / LOGICAL_WIDTH;
+    const displaySize = Math.max(4, currentSize * scale);
+    
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    if (x < 0 || x > rect.width || y < 0 || y > rect.height) {
+      brushPreview.style.display = 'none';
+      return;
+    }
+    
+    brushPreview.style.display = 'block';
+    brushPreview.style.left = `${x}px`;
+    brushPreview.style.top = `${y}px`;
+    brushPreview.style.width = `${displaySize}px`;
+    brushPreview.style.height = `${displaySize}px`;
+
+    if (currentTool === 'eraser') {
+      brushPreview.style.backgroundColor = 'rgba(255, 255, 255, 0.4)';
+    } else if (currentTool === 'pen' || currentTool === 'square') {
+      const rgb = hexToRgb(currentColor);
+      brushPreview.style.backgroundColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${currentOpacity * 0.5})`;
+    } else {
+      brushPreview.style.backgroundColor = 'transparent';
+    }
+  }
+
+  activeCanvas.addEventListener('pointerenter', (e) => {
+    if (brushPreview) brushPreview.style.display = 'block';
+  });
+  activeCanvas.addEventListener('pointerleave', () => {
+    if (brushPreview) brushPreview.style.display = 'none';
+  });
 
   // --- Remote Cursors UI ---
   const cursorContainer = document.createElement('div');
@@ -405,22 +541,33 @@ document.addEventListener('DOMContentLoaded', () => {
   const remoteCursors = {}; // id -> HTMLElement
 
   function updateRemoteCursor(id, data) {
+    const curColor = data.color || '#FF3B30';
     if (!remoteCursors[id]) {
       const el = document.createElement('div');
       el.style.position = 'absolute';
       el.style.transition = 'transform 0.05s linear';
+      el.style.zIndex = '50';
       el.innerHTML = `
         <div style="position:relative;">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style="position:absolute; left:-12px; top:-12px; filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.3));">
-            <path d="M5.5 3.21V20.8c0 .45.54.67.85.35l4.86-4.86a.5.5 0 0 1 .35-.15h6.87c.45 0 .67-.54.35-.85L6.35 2.85a.5.5 0 0 0-.85.35Z" fill="#ff3b30" stroke="white" stroke-width="2"/>
+          <svg class="remote-cursor-svg" width="24" height="24" viewBox="0 0 24 24" fill="none" style="position:absolute; left:-12px; top:-12px; filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.3));">
+            <path class="cursor-path" d="M5.5 3.21V20.8c0 .45.54.67.85.35l4.86-4.86a.5.5 0 0 1 .35-.15h6.87c.45 0 .67-.54.35-.85L6.35 2.85a.5.5 0 0 0-.85.35Z" fill="${curColor}" stroke="white" stroke-width="2"/>
           </svg>
-          <div style="position:absolute; left:0px; top:12px; background:#ff3b30; color:white; padding:2px 6px; border-radius:4px; font-size:12px; font-weight:bold; white-space:nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+          <div class="remote-name-tag" style="position:absolute; left:0px; top:12px; background:${curColor}; color:white; padding:2px 6px; border-radius:4px; font-size:12px; font-weight:bold; white-space:nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
             ${data.name}
           </div>
         </div>
       `;
       cursorContainer.appendChild(el);
       remoteCursors[id] = el;
+    } else {
+      // Dynamic updates if nickname or color changed
+      const path = remoteCursors[id].querySelector('.cursor-path');
+      const tag = remoteCursors[id].querySelector('.remote-name-tag');
+      if (path) path.setAttribute('fill', curColor);
+      if (tag) {
+        tag.style.background = curColor;
+        tag.textContent = data.name;
+      }
     }
     
     // Position via CSS transform based on normalized coordinates
@@ -451,9 +598,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function setActiveTool(tool, btn) {
     if (!btn) return;
+    
+    // Save current size to previous tool
+    if (currentTool === 'eraser') {
+      eraserSize = currentSize;
+    } else {
+      penSize = currentSize;
+    }
+    
     currentTool = tool;
     document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
+
+    // Switch size slider smoothly to the selected tool's size
+    if (currentTool === 'eraser') {
+      updateSize(eraserSize);
+    } else {
+      updateSize(penSize);
+    }
   }
 
   btnPen.addEventListener('click', () => setActiveTool('pen', btnPen));
@@ -534,6 +696,11 @@ document.addEventListener('DOMContentLoaded', () => {
   
   function updateSize(val) {
     currentSize = parseInt(val, 10);
+    if (currentTool === 'eraser') {
+      eraserSize = currentSize;
+    } else {
+      penSize = currentSize;
+    }
     if (sizeSlider) sizeSlider.value = currentSize;
     if (sizeIndicator) {
       const scale = Math.max(0.2, currentSize / 10);
@@ -565,5 +732,23 @@ document.addEventListener('DOMContentLoaded', () => {
       updateOpacity(e.target.value);
     });
     updateOpacity(currentOpacity);
+  }
+
+  // User Profile Settings
+  const userNameInput = document.getElementById('user-name-input');
+  const userColorPicker = document.getElementById('user-color-picker');
+
+  if (userNameInput) {
+    userNameInput.value = userName;
+    userNameInput.addEventListener('input', (e) => {
+      userName = e.target.value.trim() || "익명";
+    });
+  }
+
+  if (userColorPicker) {
+    userColorPicker.value = userColor;
+    userColorPicker.addEventListener('input', (e) => {
+      userColor = e.target.value;
+    });
   }
 });
