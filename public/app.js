@@ -86,6 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       activeStrokes = {};
+      resetLasso();
       drawActiveStrokes();
     } else if (ev.type === 'draw_live') {
       if (!activeStrokes[ev.strokeId]) {
@@ -821,7 +822,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnPen = document.getElementById('btn-pen');
   const btnEraser = document.getElementById('btn-eraser');
   const btnFill = document.getElementById('btn-fill');
-  const btnSquare = document.getElementById('btn-square');
   const btnUndo = document.getElementById('btn-undo');
   const btnRedo = document.getElementById('btn-redo');
   const btnPicker = document.getElementById('btn-picker');
@@ -860,8 +860,7 @@ document.addEventListener('DOMContentLoaded', () => {
   btnPen.addEventListener('click', () => setActiveTool('pen', btnPen));
   btnEraser.addEventListener('click', () => setActiveTool('eraser', btnEraser));
   btnFill.addEventListener('click', () => setActiveTool('fill', btnFill));
-  btnSquare.addEventListener('click', () => setActiveTool('square', btnSquare));
-  btnPicker.addEventListener('click', () => setActiveTool('picker', btnPicker));
+  if (btnPicker) btnPicker.addEventListener('click', () => setActiveTool('picker', btnPicker));
   if (btnLasso) btnLasso.addEventListener('click', () => setActiveTool('lasso', btnLasso));
   
   btnUndo.addEventListener('click', () => {
