@@ -89,7 +89,11 @@
           <button class="color-btn" data-color="#FFE4B5" style="background-color: #FFE4B5;"></button>
         </div>
         
-        <div class="user-profile-bar" title="프로필 설정 (닉네임 및 네임태그 색상)">
+        <div class="user-profile-bar" title="프로필 설정 및 실시간 접속자 수">
+          <div class="user-count-badge" title="현재 방 접속자 수">
+            <span class="pulse-dot"></span>
+            <span id="online-user-count">1</span>명 접속 중
+          </div>
           <input type="color" id="user-color-picker" class="user-color-picker" value="#FF3B30" title="네임태그 색상 선택">
           <input type="text" id="user-name-input" class="user-name-input" value="익명" placeholder="닉네임" maxlength="12" title="닉네임 변경">
         </div>

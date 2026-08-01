@@ -61,6 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
       Object.keys(msg.users || {}).forEach(id => {
         if (id !== userId) updateRemoteCursor(id, msg.users[id]);
       });
+      updateOnlineUserCount();
     } else if (msg.type === 'cursor') {
       if (msg.id !== userId) updateRemoteCursor(msg.id, msg);
     } else if (msg.type === 'disconnect') {
@@ -791,6 +792,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const remoteCursors = {}; // id -> HTMLElement
 
+  function updateOnlineUserCount() {
+    const el = document.getElementById('online-user-count');
+    if (!el) return;
+    const remoteCount = Object.keys(remoteCursors).length;
+    el.textContent = remoteCount + 1; // 1 (myself) + active remote users
+  }
+
   function updateRemoteCursor(id, data) {
     const curColor = data.color || '#FF3B30';
     if (!remoteCursors[id]) {
@@ -810,6 +818,7 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
       cursorContainer.appendChild(el);
       remoteCursors[id] = el;
+      updateOnlineUserCount();
     } else {
       // Dynamic updates if nickname or color changed
       const path = remoteCursors[id].querySelector('.cursor-path');
@@ -832,6 +841,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (remoteCursors[id]) {
       remoteCursors[id].remove();
       delete remoteCursors[id];
+      updateOnlineUserCount();
     }
   }
 
