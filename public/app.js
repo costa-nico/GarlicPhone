@@ -102,16 +102,52 @@ document.addEventListener('DOMContentLoaded', () => {
       drawSingleStrokeTo(ctx, ev);
       delete activeStrokes[ev.strokeId];
       drawActiveStrokes();
-    } else if (ev.type === 'fill') {
-      floodFill(ev.pos.x, ev.pos.y, hexToRgb(ev.color));
-    } else if (ev.type === 'square') {
-      ctx.globalAlpha = ev.opacity || 1;
-      ctx.strokeStyle = ev.color;
-      ctx.lineWidth = ev.size;
-      ctx.lineCap = 'square';
-      ctx.lineJoin = 'miter';
-      ctx.strokeRect(ev.startPos.x, ev.startPos.y, ev.endPos.x - ev.startPos.x, ev.endPos.y - ev.startPos.y);
-      ctx.globalAlpha = 1;
+    } else if (ev.type === 'fill' || ev.type === 'square' || ev.type === 'lasso_paste') {
+      drawHistoryItem(ctx, ev);
+    }
+  }
+
+  function drawHistoryItem(targetCtx, item) {
+    if (item.type === 'stroke') {
+      drawSingleStrokeTo(targetCtx, item);
+    } else if (item.type === 'fill') {
+      floodFill(item.pos.x, item.pos.y, hexToRgb(item.color), targetCtx);
+    } else if (item.type === 'square') {
+      targetCtx.globalAlpha = item.opacity || 1;
+      targetCtx.strokeStyle = item.color;
+      targetCtx.lineWidth = item.size;
+      targetCtx.lineCap = 'square';
+      targetCtx.lineJoin = 'miter';
+      targetCtx.strokeRect(item.startPos.x, item.startPos.y, item.endPos.x - item.startPos.x, item.endPos.y - item.startPos.y);
+      targetCtx.globalAlpha = 1;
+    } else if (item.type === 'clear') {
+      targetCtx.fillStyle = '#FFFFFF';
+      targetCtx.fillRect(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT);
+    } else if (item.type === 'lasso_paste') {
+      // 1. Fill original cutout area with white
+      targetCtx.save();
+      targetCtx.beginPath();
+      if (item.path && item.path.length > 0) {
+        item.path.forEach((pt, idx) => {
+          if (idx === 0) targetCtx.moveTo(pt.x, pt.y);
+          else targetCtx.lineTo(pt.x, pt.y);
+        });
+      }
+      targetCtx.closePath();
+      targetCtx.clip();
+      targetCtx.fillStyle = '#FFFFFF';
+      targetCtx.fillRect(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT);
+      targetCtx.restore();
+      
+      // 2. Draw cutout image
+      if (!item._img) {
+        item._img = new Image();
+        item._img.onload = () => renderHistory();
+        item._img.src = item.dataUrl;
+      }
+      if (item._img.complete) {
+        targetCtx.drawImage(item._img, item.dstPos.x, item.dstPos.y);
+      }
     }
   }
 
@@ -161,10 +197,44 @@ document.addEventListener('DOMContentLoaded', () => {
       activeCtx.strokeRect(previewShape.startPos.x, previewShape.startPos.y, previewShape.endPos.x - previewShape.startPos.x, previewShape.endPos.y - previewShape.startPos.y);
       activeCtx.globalAlpha = 1;
     }
+
+    // Render active Lasso selection UI
+    if (lassoState === 'selecting' && lassoPath.length > 0) {
+      activeCtx.save();
+      activeCtx.strokeStyle = '#007AFF';
+      activeCtx.lineWidth = 2;
+      activeCtx.setLineDash([6, 6]);
+      activeCtx.beginPath();
+      lassoPath.forEach((pt, idx) => {
+        if (idx === 0) activeCtx.moveTo(pt.x, pt.y);
+        else activeCtx.lineTo(pt.x, pt.y);
+      });
+      activeCtx.stroke();
+      activeCtx.restore();
+    } else if ((lassoState === 'selected' || lassoState === 'dragging') && lassoCutoutCanvas && lassoBoundingBox) {
+      const offsetX = lassoBoundingBox.minX + lassoDragOffset.x;
+      const offsetY = lassoBoundingBox.minY + lassoDragOffset.y;
+      
+      activeCtx.drawImage(lassoCutoutCanvas, offsetX, offsetY);
+      
+      activeCtx.save();
+      activeCtx.strokeStyle = '#007AFF';
+      activeCtx.lineWidth = 2;
+      activeCtx.setLineDash([6, 6]);
+      activeCtx.beginPath();
+      lassoPath.forEach((pt, idx) => {
+        const px = pt.x + lassoDragOffset.x;
+        const py = pt.y + lassoDragOffset.y;
+        if (idx === 0) activeCtx.moveTo(px, py);
+        else activeCtx.lineTo(px, py);
+      });
+      activeCtx.closePath();
+      activeCtx.stroke();
+      activeCtx.restore();
+    }
   }
 
   function buildSnapshotCheckpoint() {
-    // Take a snapshot every 30 stroke events to keep replay time under 0.1ms
     const CHECKPOINT_INTERVAL = 30;
     if (eventsHistory.length < CHECKPOINT_INTERVAL) {
       checkpointIndex = -1;
@@ -172,28 +242,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     const targetIndex = Math.floor(eventsHistory.length / CHECKPOINT_INTERVAL) * CHECKPOINT_INTERVAL - 1;
-    if (targetIndex === checkpointIndex) return; // Already up to date
+    if (targetIndex === checkpointIndex) return;
     
     snapshotCtx.fillStyle = '#FFFFFF';
     snapshotCtx.fillRect(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT);
     for (let i = 0; i <= targetIndex; i++) {
-      const item = eventsHistory[i];
-      if (item.type === 'stroke') {
-        drawSingleStrokeTo(snapshotCtx, item);
-      } else if (item.type === 'fill') {
-        floodFill(item.pos.x, item.pos.y, hexToRgb(item.color), snapshotCtx);
-      } else if (item.type === 'square') {
-        snapshotCtx.globalAlpha = item.opacity || 1;
-        snapshotCtx.strokeStyle = item.color;
-        snapshotCtx.lineWidth = item.size;
-        snapshotCtx.lineCap = 'square';
-        snapshotCtx.lineJoin = 'miter';
-        snapshotCtx.strokeRect(item.startPos.x, item.startPos.y, item.endPos.x - item.startPos.x, item.endPos.y - item.startPos.y);
-        snapshotCtx.globalAlpha = 1;
-      } else if (item.type === 'clear') {
-        snapshotCtx.fillStyle = '#FFFFFF';
-        snapshotCtx.fillRect(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT);
-      }
+      drawHistoryItem(snapshotCtx, eventsHistory[i]);
     }
     checkpointIndex = targetIndex;
   }
@@ -213,23 +267,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     for (let i = startIndex; i < eventsHistory.length; i++) {
-      const item = eventsHistory[i];
-      if (item.type === 'stroke') {
-        drawSingleStrokeTo(ctx, item);
-      } else if (item.type === 'fill') {
-        floodFill(item.pos.x, item.pos.y, hexToRgb(item.color));
-      } else if (item.type === 'square') {
-        ctx.globalAlpha = item.opacity || 1;
-        ctx.strokeStyle = item.color;
-        ctx.lineWidth = item.size;
-        ctx.lineCap = 'square';
-        ctx.lineJoin = 'miter';
-        ctx.strokeRect(item.startPos.x, item.startPos.y, item.endPos.x - item.startPos.x, item.endPos.y - item.startPos.y);
-        ctx.globalAlpha = 1;
-      } else if (item.type === 'clear') {
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-      }
+      drawHistoryItem(ctx, eventsHistory[i]);
     }
     drawActiveStrokes();
   }
@@ -244,6 +282,61 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentOpacity = 1;
   let currentStrokeId = null;
   let startPos = null;
+
+  // --- Lasso Tool State ---
+  let lassoState = 'idle'; // 'idle', 'selecting', 'selected', 'dragging'
+  let lassoPath = [];
+  let lassoCutoutCanvas = null;
+  let lassoBoundingBox = null; // { minX, minY, maxX, maxY }
+  let lassoDragStart = null;
+  let lassoDragOffset = { x: 0, y: 0 };
+
+  function stampLassoSelection() {
+    if (lassoState !== 'selected' && lassoState !== 'dragging') return;
+    if (!lassoCutoutCanvas || !lassoBoundingBox) {
+      resetLasso();
+      return;
+    }
+    
+    const finalX = lassoBoundingBox.minX + lassoDragOffset.x;
+    const finalY = lassoBoundingBox.minY + lassoDragOffset.y;
+    
+    // Draw the cutout permanently onto main canvas
+    ctx.drawImage(lassoCutoutCanvas, finalX, finalY);
+    
+    const strokeObj = {
+      type: 'lasso_paste',
+      strokeId: Math.random().toString(36).slice(2),
+      userId,
+      dataUrl: lassoCutoutCanvas.toDataURL(),
+      dstPos: { x: finalX, y: finalY },
+      path: lassoPath.map(pt => ({ x: pt.x + lassoDragOffset.x, y: pt.y + lassoDragOffset.y }))
+    };
+    
+    emitAndProcess(strokeObj);
+    myStrokes.push(strokeObj.strokeId);
+    
+    resetLasso();
+  }
+
+  function resetLasso() {
+    lassoState = 'idle';
+    lassoPath = [];
+    lassoCutoutCanvas = null;
+    lassoBoundingBox = null;
+    lassoDragStart = null;
+    lassoDragOffset = { x: 0, y: 0 };
+    drawActiveStrokes();
+  }
+
+  function isPointInsideLasso(pt) {
+    if (!lassoBoundingBox) return false;
+    const curMinX = lassoBoundingBox.minX + lassoDragOffset.x;
+    const curMaxX = lassoBoundingBox.maxX + lassoDragOffset.x;
+    const curMinY = lassoBoundingBox.minY + lassoDragOffset.y;
+    const curMaxY = lassoBoundingBox.maxY + lassoDragOffset.y;
+    return pt.x >= curMinX && pt.x <= curMaxX && pt.y >= curMinY && pt.y <= curMaxY;
+  }
 
   let lastKnownPos = null;
   function getCoordinates(e) {
@@ -362,6 +455,29 @@ document.addEventListener('DOMContentLoaded', () => {
     
     myRedoStack = []; // Clear redo stack on new action
     
+    if (currentTool === 'lasso') {
+      if (lassoState === 'selected' && isPointInsideLasso(startPos)) {
+        lassoState = 'dragging';
+        lassoDragStart = startPos;
+        activeCanvas.setPointerCapture(e.pointerId);
+        return;
+      }
+      
+      if (lassoState === 'selected' || lassoState === 'dragging') {
+        stampLassoSelection();
+      }
+      
+      lassoState = 'selecting';
+      lassoPath = [startPos];
+      drawActiveStrokes();
+      activeCanvas.setPointerCapture(e.pointerId);
+      return;
+    }
+
+    if (lassoState === 'selected' || lassoState === 'dragging') {
+      stampLassoSelection();
+    }
+    
     if (currentTool === 'fill') {
       emitAndProcess({ type: 'fill', strokeId: currentStrokeId, userId, color: currentColor, opacity: currentOpacity, pos: startPos });
       myStrokes.push(currentStrokeId);
@@ -369,7 +485,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     } else if (currentTool === 'picker') {
       pickColorInteractive(startPos.x, startPos.y);
-      canvas.setPointerCapture(e.pointerId);
+      activeCanvas.setPointerCapture(e.pointerId);
       return;
     } else if (currentTool !== 'square') {
       activeStrokes[currentStrokeId] = {
@@ -388,7 +504,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       broadcast({ type: 'draw_live', strokeId: currentStrokeId, tool: currentTool, color: currentColor, opacity: currentOpacity, size: currentSize, pos: startPos });
     }
-    canvas.setPointerCapture(e.pointerId);
+    try { activeCanvas.setPointerCapture(e.pointerId); } catch(err) {}
   }
 
   let previewShape = null; // Temp state for local square preview
@@ -405,18 +521,35 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
+    // Update Brush Preview Cursor on every pointermove
+    updateBrushPreview(e);
+
     if (!isDrawing) return;
+    if (e.buttons === 0 && e.pointerType === 'mouse') {
+      stopDrawing(e);
+      return;
+    }
+    
+    const pos = getCoordinates(e);
+
+    if (currentTool === 'lasso') {
+      if (lassoState === 'selecting') {
+        lassoPath.push(pos);
+        drawActiveStrokes();
+      } else if (lassoState === 'dragging') {
+        lassoDragOffset = { x: pos.x - lassoDragStart.x, y: pos.y - lassoDragStart.y };
+        drawActiveStrokes();
+      }
+      return;
+    }
     
     if (currentTool === 'picker') {
-      const pos = getCoordinates(e);
       pickColorInteractive(pos.x, pos.y);
       return;
     }
     
     if (currentTool === 'square') {
-      // Local preview only, no broadcast yet
-      const currentPos = getCoordinates(e);
-      previewShape = { color: currentColor, opacity: currentOpacity, size: currentSize, startPos, endPos: currentPos };
+      previewShape = { color: currentColor, opacity: currentOpacity, size: currentSize, startPos, endPos: pos };
       drawActiveStrokes();
       updateBrushPreview(e);
       return;
@@ -426,15 +559,15 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
     for (let ev of events) {
-      const pos = getCoordinates(ev);
+      const p = getCoordinates(ev);
       if (activeStrokes[currentStrokeId]) {
-        activeStrokes[currentStrokeId].points.push(pos);
+        activeStrokes[currentStrokeId].points.push(p);
         if (currentTool === 'eraser') {
           drawSingleStrokeTo(ctx, activeStrokes[currentStrokeId]);
         } else {
           drawActiveStrokes();
         }
-        broadcast({ type: 'draw_live', strokeId: currentStrokeId, tool: currentTool, color: currentColor, opacity: currentOpacity, size: currentSize, pos });
+        broadcast({ type: 'draw_live', strokeId: currentStrokeId, tool: currentTool, color: currentColor, opacity: currentOpacity, size: currentSize, pos: p });
       }
     }
   }
@@ -442,9 +575,77 @@ document.addEventListener('DOMContentLoaded', () => {
   function stopDrawing(e) {
     if (!isDrawing) return;
     
+    if (currentTool === 'lasso') {
+      if (lassoState === 'selecting') {
+        if (lassoPath.length > 5) {
+          let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+          lassoPath.forEach(pt => {
+            if (pt.x < minX) minX = pt.x;
+            if (pt.y < minY) minY = pt.y;
+            if (pt.x > maxX) maxX = pt.x;
+            if (pt.y > maxY) maxY = pt.y;
+          });
+          
+          const width = Math.ceil(maxX - minX);
+          const height = Math.ceil(maxY - minY);
+          
+          if (width >= 5 && height >= 5) {
+            lassoBoundingBox = { minX, minY, maxX, maxY, width, height };
+            
+            lassoCutoutCanvas = document.createElement('canvas');
+            lassoCutoutCanvas.width = width;
+            lassoCutoutCanvas.height = height;
+            const cCtx = lassoCutoutCanvas.getContext('2d');
+            
+            cCtx.beginPath();
+            lassoPath.forEach((pt, idx) => {
+              if (idx === 0) cCtx.moveTo(pt.x - minX, pt.y - minY);
+              else cCtx.lineTo(pt.x - minX, pt.y - minY);
+            });
+            cCtx.closePath();
+            cCtx.clip();
+            cCtx.drawImage(canvas, -minX, -minY);
+            
+            ctx.save();
+            ctx.beginPath();
+            lassoPath.forEach((pt, idx) => {
+              if (idx === 0) ctx.moveTo(pt.x, pt.y);
+              else ctx.lineTo(pt.x, pt.y);
+            });
+            ctx.closePath();
+            ctx.clip();
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT);
+            ctx.restore();
+            
+            lassoState = 'selected';
+            lassoDragOffset = { x: 0, y: 0 };
+          } else {
+            resetLasso();
+          }
+        } else {
+          resetLasso();
+        }
+      } else if (lassoState === 'dragging') {
+        lassoBoundingBox.minX += lassoDragOffset.x;
+        lassoBoundingBox.minY += lassoDragOffset.y;
+        lassoPath.forEach(pt => {
+          pt.x += lassoDragOffset.x;
+          pt.y += lassoDragOffset.y;
+        });
+        lassoDragOffset = { x: 0, y: 0 };
+        lassoState = 'selected';
+      }
+      
+      drawActiveStrokes();
+      isDrawing = false;
+      try { activeCanvas.releasePointerCapture(e.pointerId); } catch(err) {}
+      return;
+    }
+
     if (currentTool === 'picker') {
       isDrawing = false;
-      canvas.releasePointerCapture(e.pointerId);
+      try { activeCanvas.releasePointerCapture(e.pointerId); } catch(err) {}
       setActiveTool('pen', document.getElementById('btn-pen'));
       return;
     }
@@ -456,7 +657,7 @@ document.addEventListener('DOMContentLoaded', () => {
       emitAndProcess({ type: 'square', strokeId: currentStrokeId, userId, color: currentColor, opacity: currentOpacity, size: currentSize, startPos, endPos });
       myStrokes.push(currentStrokeId);
       isDrawing = false;
-      canvas.releasePointerCapture(e.pointerId);
+      try { activeCanvas.releasePointerCapture(e.pointerId); } catch(err) {}
       return;
     }
     
@@ -478,13 +679,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     isDrawing = false;
-    canvas.releasePointerCapture(e.pointerId);
+    try { activeCanvas.releasePointerCapture(e.pointerId); } catch(err) {}
   }
 
   activeCanvas.addEventListener('pointerdown', startDrawing);
   activeCanvas.addEventListener('pointermove', draw);
   activeCanvas.addEventListener('pointerup', stopDrawing);
   activeCanvas.addEventListener('pointercancel', stopDrawing);
+  window.addEventListener('pointerup', stopDrawing);
+  window.addEventListener('pointercancel', stopDrawing);
 
   // Brush Preview Cursor UI
   const brushPreview = document.getElementById('brush-preview');
@@ -502,7 +705,14 @@ document.addEventListener('DOMContentLoaded', () => {
       brushPreview.style.display = 'none';
       return;
     }
+
+    if (currentTool === 'picker' || currentTool === 'lasso') {
+      brushPreview.style.display = 'none';
+      activeCanvas.style.cursor = 'crosshair';
+      return;
+    }
     
+    activeCanvas.style.cursor = 'none';
     brushPreview.style.display = 'block';
     brushPreview.style.left = `${x}px`;
     brushPreview.style.top = `${y}px`;
@@ -592,6 +802,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnUndo = document.getElementById('btn-undo');
   const btnRedo = document.getElementById('btn-redo');
   const btnPicker = document.getElementById('btn-picker');
+  const btnLasso = document.getElementById('btn-lasso');
   const btnClear = document.getElementById('btn-clear');
   
   let myRedoStack = []; // Stores { strokeId, events: [] }
@@ -599,6 +810,11 @@ document.addEventListener('DOMContentLoaded', () => {
   function setActiveTool(tool, btn) {
     if (!btn) return;
     
+    // If leaving lasso tool with an active selection, stamp it
+    if (currentTool === 'lasso' && tool !== 'lasso') {
+      stampLassoSelection();
+    }
+
     // Save current size to previous tool
     if (currentTool === 'eraser') {
       eraserSize = currentSize;
@@ -610,7 +826,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
 
-    // Switch size slider smoothly to the selected tool's size
+    // Switch size slider smoothly to selected tool's size
     if (currentTool === 'eraser') {
       updateSize(eraserSize);
     } else {
@@ -623,6 +839,7 @@ document.addEventListener('DOMContentLoaded', () => {
   btnFill.addEventListener('click', () => setActiveTool('fill', btnFill));
   btnSquare.addEventListener('click', () => setActiveTool('square', btnSquare));
   btnPicker.addEventListener('click', () => setActiveTool('picker', btnPicker));
+  if (btnLasso) btnLasso.addEventListener('click', () => setActiveTool('lasso', btnLasso));
   
   btnUndo.addEventListener('click', () => {
     // Only undo my strokes!
