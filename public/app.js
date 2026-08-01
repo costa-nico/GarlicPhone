@@ -145,13 +145,12 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!item._img) {
         item._img = new Image();
         item._img.onload = () => {
-          targetCtx.drawImage(item._img, item.dstPos.x, item.dstPos.y);
-          drawActiveStrokes();
           checkpointIndex = -1;
+          renderHistory();
         };
         item._img.src = item.dataUrl;
       }
-      if (item._img.complete && item._img.naturalWidth !== 0) {
+      if (item._img.complete || item._img instanceof HTMLCanvasElement) {
         targetCtx.drawImage(item._img, item.dstPos.x, item.dstPos.y);
       }
     }
@@ -333,7 +332,8 @@ document.addEventListener('DOMContentLoaded', () => {
       userId,
       dataUrl: lassoCutoutCanvas.toDataURL(),
       dstPos: { x: finalX, y: finalY },
-      srcPath: originalLassoPath // Preserve original selection path for clearing source
+      srcPath: originalLassoPath,
+      _img: lassoCutoutCanvas // Pre-attach canvas for instant 0ms local synchronous drawing
     };
     
     emitAndProcess(strokeObj);
