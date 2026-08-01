@@ -5,7 +5,7 @@ const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
+const wss = new WebSocket.Server({ server, maxPayload: 50 * 1024 * 1024 });
 
 // Serve frontend files from the public directory
 app.use(express.static(path.join(__dirname, 'public')));
