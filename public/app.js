@@ -145,8 +145,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!item._img) {
         item._img = new Image();
         item._img.onload = () => {
-          targetCtx.drawImage(item._img, item.dstPos.x, item.dstPos.y);
-          drawActiveStrokes();
+          checkpointIndex = -1; // Invalidate snapshot cache to force full re-render with decoded image
+          renderHistory();
         };
         item._img.src = item.dataUrl;
       }
