@@ -142,16 +142,26 @@ document.addEventListener('DOMContentLoaded', () => {
       targetCtx.restore();
       
       // 2. Draw cutout image at new destination
-      if (!item._img) {
-        item._img = new Image();
-        item._img.onload = () => {
-          checkpointIndex = -1;
-          renderHistory();
+      if (item._img && (item._img.complete || item._img instanceof HTMLCanvasElement)) {
+        try {
+          targetCtx.drawImage(item._img, item.dstPos.x, item.dstPos.y);
+        } catch(err) {}
+      } else if (item.dataUrl) {
+        const img = new Image();
+        img.onload = () => {
+          item._img = img;
+          try {
+            targetCtx.drawImage(img, item.dstPos.x, item.dstPos.y);
+            drawActiveStrokes();
+          } catch(err) {}
         };
-        item._img.src = item.dataUrl;
-      }
-      if (item._img.complete || item._img instanceof HTMLCanvasElement) {
-        targetCtx.drawImage(item._img, item.dstPos.x, item.dstPos.y);
+        img.src = item.dataUrl;
+        if (img.complete) {
+          item._img = img;
+          try {
+            targetCtx.drawImage(img, item.dstPos.x, item.dstPos.y);
+          } catch(err) {}
+        }
       }
     }
   }
