@@ -72,26 +72,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- Rendering Engine ---
   
-  function processEvent(ev) {
+  function processEvent(ev, skipActiveRedraw = false) {
     if (ev.type === 'clear') {
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       activeStrokes = {};
-      drawActiveStrokes();
+      if (!skipActiveRedraw) drawActiveStrokes();
     } else if (ev.type === 'start') {
       activeStrokes[ev.strokeId] = { ...ev, points: [ev.pos] };
-      drawActiveStrokes();
+      if (ev.tool === 'eraser') {
+        drawSingleStrokeTo(ctx, activeStrokes[ev.strokeId]);
+      } else {
+        if (!skipActiveRedraw) drawActiveStrokes();
+      }
     } else if (ev.type === 'draw') {
       const stroke = activeStrokes[ev.strokeId];
       if (stroke) {
         stroke.points.push(ev.pos);
-        drawActiveStrokes();
+        if (stroke.tool === 'eraser') {
+          drawSingleStrokeTo(ctx, stroke);
+        } else {
+          if (!skipActiveRedraw) drawActiveStrokes();
+        }
       }
     } else if (ev.type === 'end') {
       if (activeStrokes[ev.strokeId]) {
-        drawSingleStrokeTo(ctx, activeStrokes[ev.strokeId]);
+        if (activeStrokes[ev.strokeId].tool !== 'eraser') {
+          drawSingleStrokeTo(ctx, activeStrokes[ev.strokeId]);
+        }
         delete activeStrokes[ev.strokeId];
-        drawActiveStrokes();
+        if (!skipActiveRedraw) drawActiveStrokes();
       }
     } else if (ev.type === 'fill') {
       floodFill(ev.pos.x, ev.pos.y, hexToRgb(ev.color));
@@ -165,7 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     activeStrokes = {};
     for (let ev of eventsHistory) {
-      processEvent(ev);
+      processEvent(ev, true);
     }
     drawActiveStrokes(); // In case anyone is actively drawing right now
   }
@@ -179,18 +189,31 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentStrokeId = null;
   let startPos = null;
 
+  let lastKnownPos = null;
   function getCoordinates(e) {
+    if (!e) return lastKnownPos || { x: 0, y: 0 };
     const rect = canvas.getBoundingClientRect();
+    let clientX = e.clientX;
+    let clientY = e.clientY;
+    
+    // Guard against tablet touch release zero-coordinate artifacts
+    if (clientX === undefined || clientY === undefined || (clientX === 0 && clientY === 0)) {
+      if (lastKnownPos) return lastKnownPos;
+    }
+    
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
-    return {
-      x: (e.clientX - rect.left) * scaleX,
-      y: (e.clientY - rect.top) * scaleY
+    const pos = {
+      x: (clientX - rect.left) * scaleX,
+      y: (clientY - rect.top) * scaleY
     };
+    lastKnownPos = pos;
+    return pos;
   }
 
   function getNormalizedCursorPos(e) {
     const rect = canvas.getBoundingClientRect();
+    if (!e || e.clientX === undefined) return { x: 0, y: 0 };
     return {
       x: (e.clientX - rect.left) / rect.width,
       y: (e.clientY - rect.top) / rect.height
@@ -366,10 +389,6 @@ document.addEventListener('DOMContentLoaded', () => {
   canvas.addEventListener('pointermove', draw);
   canvas.addEventListener('pointerup', stopDrawing);
   canvas.addEventListener('pointercancel', stopDrawing);
-  canvas.addEventListener('pointerout', (e) => {
-    stopDrawing(e);
-    broadcast({ type: 'disconnect', id: userId });
-  });
 
   // --- Remote Cursors UI ---
   const cursorContainer = document.createElement('div');
