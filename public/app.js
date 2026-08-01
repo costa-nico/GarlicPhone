@@ -257,11 +257,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let savedStateBeforeShape = null; // Temp state for local square preview
 
+  let lastCursorSend = 0;
   function draw(e) {
-    // Broadcast cursor position
+    // Broadcast cursor position (Throttled to 20 times a second to save bandwidth)
     const normPos = getNormalizedCursorPos(e);
     if (normPos.x >= 0 && normPos.x <= 1 && normPos.y >= 0 && normPos.y <= 1) {
-      broadcast({ type: 'cursor', id: userId, name: userName, pos: normPos });
+      const now = Date.now();
+      if (now - lastCursorSend > 50) {
+        broadcast({ type: 'cursor', id: userId, name: userName, pos: normPos });
+        lastCursorSend = now;
+      }
     }
 
     if (!isDrawing) return;
