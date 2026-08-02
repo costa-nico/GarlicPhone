@@ -1039,6 +1039,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  if (userColorPicker) {
+    userColorPicker.value = userColor;
+    userColorPicker.addEventListener('input', (e) => {
+      userColor = e.target.value;
+    });
+  }
+
   // Fullscreen Toggle for Tablets & Desktop
   const btnFullscreen = document.getElementById('btn-fullscreen');
   if (btnFullscreen) {
