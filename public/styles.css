@@ -241,6 +241,32 @@ body {
   border-color: var(--accent-color);
 }
 
+.fullscreen-btn {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #2c2c2e;
+  color: #ffffff;
+  width: 2.2cqw;
+  height: 2.2cqw;
+  border-radius: 0.5cqw;
+  padding: 0.3cqw;
+  cursor: pointer;
+  box-shadow: 0 0.1cqw 0.3cqw rgba(0,0,0,0.15);
+  transition: transform 0.1s ease, background-color 0.15s ease;
+}
+.fullscreen-btn:hover {
+  background-color: #3a3a3c;
+  transform: scale(1.05);
+}
+.fullscreen-btn:active {
+  transform: scale(0.95);
+}
+.fullscreen-btn svg {
+  width: 1.2cqw;
+  height: 1.2cqw;
+}
+
 .current-color-display {
   grid-column: span 4;
   width: 100%;
