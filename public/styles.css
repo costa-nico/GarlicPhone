@@ -247,7 +247,7 @@ body {
   border-color: var(--accent-color);
 }
 
-.fullscreen-btn {
+.action-btn, .fullscreen-btn {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -261,14 +261,14 @@ body {
   box-shadow: 0 0.1cqw 0.3cqw rgba(0,0,0,0.15);
   transition: transform 0.1s ease, background-color 0.15s ease;
 }
-.fullscreen-btn:hover {
+.action-btn:hover, .fullscreen-btn:hover {
   background-color: #3a3a3c;
   transform: scale(1.05);
 }
-.fullscreen-btn:active {
+.action-btn:active, .fullscreen-btn:active {
   transform: scale(0.95);
 }
-.fullscreen-btn svg {
+.action-btn svg, .fullscreen-btn svg {
   width: 1.2cqw;
   height: 1.2cqw;
 }

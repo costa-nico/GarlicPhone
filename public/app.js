@@ -1046,6 +1046,35 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Save PNG Image Download
+  const btnSave = document.getElementById('btn-save');
+  if (btnSave) {
+    btnSave.addEventListener('click', () => {
+      // Create offscreen canvas with white background to guarantee non-black transparent PNG
+      const saveCanvas = document.createElement('canvas');
+      saveCanvas.width = LOGICAL_WIDTH;
+      saveCanvas.height = LOGICAL_HEIGHT;
+      const saveCtx = saveCanvas.getContext('2d');
+      
+      // 1. Fill solid white background
+      saveCtx.fillStyle = '#FFFFFF';
+      saveCtx.fillRect(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT);
+      
+      // 2. Draw current drawing canvas content
+      saveCtx.drawImage(canvas, 0, 0);
+
+      // 3. Trigger automatic PNG download
+      const now = new Date();
+      const timestamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
+      const filename = `GarlicPhone_${timestamp}.png`;
+
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = saveCanvas.toDataURL('image/png');
+      link.click();
+    });
+  }
+
   // Fullscreen Toggle for Tablets & Desktop
   const btnFullscreen = document.getElementById('btn-fullscreen');
   if (btnFullscreen) {
