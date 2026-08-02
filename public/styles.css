@@ -26,7 +26,9 @@ body {
   justify-content: center;
   align-items: center;
   height: 100vh;
+  height: 100dvh;
   width: 100vw;
+  width: 100dvw;
   overflow: hidden;
 }
 
@@ -49,14 +51,18 @@ body {
 /* Ensure the app-container keeps aspect ratio but fits inside viewport */
 @media (min-aspect-ratio: 16/9) {
   .app-container {
-    height: 95vh;
+    height: 94vh;
+    height: 94dvh;
     width: auto;
   }
 }
 @media (max-aspect-ratio: 16/9) {
   .app-container {
     width: 95vw;
+    width: 95dvw;
     height: auto;
+    max-height: 92vh;
+    max-height: 92dvh;
   }
 }
 
@@ -65,11 +71,11 @@ body {
   flex-direction: column;
   width: 25%; /* 4 parts of 16 */
   background-color: var(--toolbar-bg);
-  padding: 1.5cqw;
-  gap: 1.5cqw;
+  padding: 1.2cqw;
+  gap: 1cqw;
   align-items: stretch;
-  justify-content: start;
-  overflow: hidden; /* Math guarantees it fits now */
+  justify-content: space-between;
+  overflow: hidden;
 }
 
 .toolbar-top {
@@ -163,17 +169,17 @@ body {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 0.4cqw;
-  width: 85%; /* Reduced to fit 1:1 height in the layout */
+  width: 100%;
 }
 
 .user-profile-bar {
   display: flex;
   align-items: center;
-  gap: 0.5cqw;
-  width: 85%;
-  margin-top: 0.3cqw;
+  gap: 0.4cqw;
+  width: 100%;
+  margin-top: 0.2cqw;
   background-color: #e8e8ed;
-  padding: 0.4cqw 0.6cqw;
+  padding: 0.3cqw 0.5cqw;
   border-radius: 0.8cqw;
 }
 

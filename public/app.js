@@ -890,40 +890,68 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnPicker) btnPicker.addEventListener('click', () => setActiveTool('picker', btnPicker));
   if (btnLasso) btnLasso.addEventListener('click', () => setActiveTool('lasso', btnLasso));
   
-  btnUndo.addEventListener('click', () => {
-    // Only undo my strokes!
+  function performUndo() {
     if (myStrokes.length > 0) {
       const lastStrokeId = myStrokes.pop();
-      
-      // Save to redo stack before deleting
       const undoneEvents = eventsHistory.filter(e => e.strokeId === lastStrokeId);
       myRedoStack.push({ strokeId: lastStrokeId, events: undoneEvents });
-
-      // Inform others to remove this stroke
       broadcast({ type: 'undo', strokeId: lastStrokeId, userId });
-      
-      // Remove locally and re-render
       eventsHistory = eventsHistory.filter(e => e.strokeId !== lastStrokeId);
       renderHistory();
     }
-  });
+  }
+
+  function performRedo() {
+    if (myRedoStack.length > 0) {
+      const redoItem = myRedoStack.pop();
+      myStrokes.push(redoItem.strokeId);
+      redoItem.events.forEach(ev => {
+        eventsHistory.push(ev);
+        processEvent(ev);
+        broadcast(ev);
+      });
+    }
+  }
+
+  btnUndo.addEventListener('click', performUndo);
 
   // Enable Redo!
   btnRedo.style.opacity = '1';
   btnRedo.style.cursor = 'pointer';
-  btnRedo.addEventListener('click', () => {
-    if (myRedoStack.length > 0) {
-      const redoItem = myRedoStack.pop();
-      
-      // Add back to myStrokes so it can be undone again
-      myStrokes.push(redoItem.strokeId);
-      
-      // Re-broadcast all events of this stroke to the server and local canvas
-      redoItem.events.forEach(ev => {
-        eventsHistory.push(ev);
-        processEvent(ev); // draw locally
-        broadcast(ev);    // send to server
-      });
+  btnRedo.addEventListener('click', performRedo);
+
+  // Keyboard Shortcuts (Ctrl+Z Undo, Ctrl+Y Redo, Tool Hotkeys, Esc Cancel)
+  window.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+    const isCmdOrCtrl = e.ctrlKey || e.metaKey;
+    const key = e.key.toLowerCase();
+
+    if (isCmdOrCtrl && key === 'z') {
+      if (e.shiftKey) {
+        e.preventDefault();
+        performRedo();
+      } else {
+        e.preventDefault();
+        performUndo();
+      }
+    } else if (isCmdOrCtrl && key === 'y') {
+      e.preventDefault();
+      performRedo();
+    } else if (key === 'b') {
+      setActiveTool('pen', btnPen);
+    } else if (key === 'e') {
+      setActiveTool('eraser', btnEraser);
+    } else if (key === 'g') {
+      setActiveTool('fill', btnFill);
+    } else if (key === 'l') {
+      if (btnLasso) setActiveTool('lasso', btnLasso);
+    } else if (key === 'i') {
+      if (btnPicker) setActiveTool('picker', btnPicker);
+    } else if (key === 'escape') {
+      if (lassoState === 'selected' || lassoState === 'dragging') {
+        resetLasso();
+      }
     }
   });
   
