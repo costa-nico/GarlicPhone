@@ -168,19 +168,19 @@ body {
 .palette-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 0.4cqw;
-  width: 100%;
+  gap: 0.3cqw;
+  width: 95%;
 }
 
 .user-profile-bar {
   display: flex;
   align-items: center;
   gap: 0.4cqw;
-  width: 100%;
-  margin-top: 0.2cqw;
+  width: 95%;
+  margin-top: 0.1cqw;
   background-color: #e8e8ed;
-  padding: 0.3cqw 0.5cqw;
-  border-radius: 0.8cqw;
+  padding: 0.2cqw 0.4cqw;
+  border-radius: 0.6cqw;
 }
 
 .user-color-picker {
@@ -276,9 +276,9 @@ body {
 .current-color-display {
   grid-column: span 4;
   width: 100%;
-  height: 2.5cqw;
-  border: 0.2cqw solid #ccc;
-  border-radius: 0.5cqw;
+  height: 2.0cqw;
+  border: 0.15cqw solid #ccc;
+  border-radius: 0.4cqw;
   padding: 0;
   cursor: pointer;
   background-color: transparent;
@@ -373,7 +373,7 @@ button {
   transition: 0.1s ease-in-out;
   position: relative;
   top: 0;
-  box-shadow: inset 0 -0.4cqw 0 rgba(0,0,0,0.3), rgba(0,0,0,0.15) 0px 0.6cqw 0.4cqw;
+  box-shadow: inset 0 -0.2cqw 0 rgba(0,0,0,0.25), rgba(0,0,0,0.12) 0px 0.3cqw 0.2cqw;
 }
 
 .color-btn:hover {
@@ -381,9 +381,9 @@ button {
 }
 
 .color-btn:active, .color-btn.active {
-  top: 0.4cqw;
+  top: 0.2cqw;
   border-color: #333;
-  box-shadow: inset 0 -0.1cqw 0 rgba(0,0,0,0.3), rgba(0,0,0,0.15) 0px 0.2cqw 0.2cqw;
+  box-shadow: inset 0 -0.1cqw 0 rgba(0,0,0,0.3), rgba(0,0,0,0.15) 0px 0.1cqw 0.1cqw;
   z-index: 2;
 }
 
