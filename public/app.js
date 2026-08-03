@@ -26,11 +26,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const snapshotCtx = snapshotCanvas.getContext('2d');
   let checkpointIndex = -1; // History index covered by the snapshot canvas
 
-  // Multiplayer State
-  const userId = Math.random().toString(36).slice(2, 10); // Differentiated by unique random ID!
+  // Multiplayer State (Restored from localStorage if available)
+  let userId = localStorage.getItem('garlic_user_id');
+  if (!userId) {
+    userId = Math.random().toString(36).slice(2, 10);
+    localStorage.setItem('garlic_user_id', userId);
+  }
   const vibrantColors = ['#FF3B30', '#FF9500', '#FFCC00', '#4CD964', '#5AC8FA', '#007AFF', '#5856D6', '#FF2D55'];
-  let userColor = vibrantColors[Math.floor(Math.random() * vibrantColors.length)];
-  let userName = "익명" + Math.floor(Math.random() * 90 + 10);
+  let userColor = localStorage.getItem('garlic_user_color') || vibrantColors[Math.floor(Math.random() * vibrantColors.length)];
+  let userName = localStorage.getItem('garlic_user_name') || ("익명" + Math.floor(Math.random() * 90 + 10));
   
   let eventsHistory = [];
   let myStrokes = []; // Track my own stroke IDs for Undo
@@ -310,14 +314,15 @@ document.addEventListener('DOMContentLoaded', () => {
     drawActiveStrokes();
   }
 
-  // --- Local Drawing State ---
+  // --- Local Drawing State (Restored from localStorage if available) ---
   let isDrawing = false;
   let currentTool = 'pen';
   let currentColor = '#000000';
-  let penSize = 8;
-  let eraserSize = 30;
+  let penSize = parseInt(localStorage.getItem('garlic_pen_size'), 10) || 8;
+  let eraserSize = parseInt(localStorage.getItem('garlic_eraser_size'), 10) || 30;
   let currentSize = penSize;
-  let currentOpacity = 1;
+  let currentOpacity = parseFloat(localStorage.getItem('garlic_opacity'));
+  if (isNaN(currentOpacity) || currentOpacity < 0.05 || currentOpacity > 1) currentOpacity = 1;
   let currentStrokeId = null;
   let startPos = null;
 
@@ -992,8 +997,10 @@ document.addEventListener('DOMContentLoaded', () => {
     currentSize = parseInt(val, 10);
     if (currentTool === 'eraser') {
       eraserSize = currentSize;
+      localStorage.setItem('garlic_eraser_size', eraserSize);
     } else {
       penSize = currentSize;
+      localStorage.setItem('garlic_pen_size', penSize);
     }
     if (sizeSlider) sizeSlider.value = currentSize;
     if (sizeIndicator) {
@@ -1015,6 +1022,8 @@ document.addEventListener('DOMContentLoaded', () => {
   
   function updateOpacity(val) {
     currentOpacity = parseFloat(val);
+    if (isNaN(currentOpacity) || currentOpacity < 0.05 || currentOpacity > 1) currentOpacity = 1;
+    localStorage.setItem('garlic_opacity', currentOpacity);
     if (opacitySlider) opacitySlider.value = currentOpacity;
     if (opacityIndicator) {
       opacityIndicator.style.opacity = currentOpacity;
@@ -1036,6 +1045,7 @@ document.addEventListener('DOMContentLoaded', () => {
     userNameInput.value = userName;
     userNameInput.addEventListener('input', (e) => {
       userName = e.target.value.trim() || "익명";
+      localStorage.setItem('garlic_user_name', userName);
     });
   }
 
@@ -1043,6 +1053,7 @@ document.addEventListener('DOMContentLoaded', () => {
     userColorPicker.value = userColor;
     userColorPicker.addEventListener('input', (e) => {
       userColor = e.target.value;
+      localStorage.setItem('garlic_user_color', userColor);
     });
   }
 
