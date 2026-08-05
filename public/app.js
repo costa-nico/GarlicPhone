@@ -13,9 +13,11 @@ document.addEventListener('DOMContentLoaded', () => {
   activeCanvas.width = LOGICAL_WIDTH;
   activeCanvas.height = LOGICAL_HEIGHT;
   
-  // Set context properties (Sharp crisp rendering without soft Gaussian blur)
-  ctx.imageSmoothingEnabled = false;
-  activeCtx.imageSmoothingEnabled = false;
+  // Set context properties
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  activeCtx.imageSmoothingEnabled = true;
+  activeCtx.imageSmoothingQuality = 'high';
 
   // Snapshot Checkpoint Cache (Non-destructive rendering acceleration)
   const snapshotCanvas = document.createElement('canvas');
@@ -189,14 +191,6 @@ document.addEventListener('DOMContentLoaded', () => {
     targetCtx.lineJoin = 'round';
     targetCtx.globalCompositeOperation = 'source-over';
 
-    if (stroke.blur && stroke.blur > 0) {
-      targetCtx.shadowColor = stroke.tool === 'eraser' ? '#FFFFFF' : stroke.color;
-      targetCtx.shadowBlur = stroke.blur;
-    } else {
-      targetCtx.shadowColor = 'transparent';
-      targetCtx.shadowBlur = 0;
-    }
-
     targetCtx.beginPath();
     const pts = stroke.points;
     targetCtx.moveTo(pts[0].x, pts[0].y);
@@ -216,8 +210,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     targetCtx.globalAlpha = 1;
-    targetCtx.shadowBlur = 0;
-    targetCtx.shadowColor = 'transparent';
     targetCtx.globalCompositeOperation = 'source-over';
   }
 
@@ -336,8 +328,6 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentSize = penSize;
   let currentOpacity = parseFloat(localStorage.getItem('garlic_opacity'));
   if (isNaN(currentOpacity) || currentOpacity < 0.05 || currentOpacity > 1) currentOpacity = 1;
-  let currentBlur = parseInt(localStorage.getItem('garlic_blur'), 10) || 0;
-  if (isNaN(currentBlur) || currentBlur < 0) currentBlur = 0;
   let currentStrokeId = null;
   let startPos = null;
 
@@ -506,9 +496,43 @@ document.addEventListener('DOMContentLoaded', () => {
     targetCtx.putImageData(imageData, 0, 0);
   }
 
+  // Temporary Stylus Eraser State
+  let isStylusEraserActive = false;
+  let savedToolBeforeStylus = null;
+
+  function checkStylusBarrelButton(e) {
+    const isPen = e.pointerType === 'pen' || e.pointerType === 'stylus' || e.buttons === 2 || e.buttons === 5 || e.buttons === 32;
+    const isBarrelPressed = (e.buttons & 2) !== 0 || (e.buttons & 32) !== 0 || e.button === 2 || e.button === 5;
+
+    if (isPen && isBarrelPressed) {
+      if (!isStylusEraserActive) {
+        isStylusEraserActive = true;
+        savedToolBeforeStylus = currentTool;
+        setActiveTool('eraser', btnEraser);
+      }
+      return true;
+    }
+    return false;
+  }
+
+  function releaseStylusBarrelButton() {
+    if (isStylusEraserActive) {
+      isStylusEraserActive = false;
+      if (savedToolBeforeStylus && savedToolBeforeStylus !== 'eraser') {
+        const targetBtn = savedToolBeforeStylus === 'pen' ? btnPen :
+                          savedToolBeforeStylus === 'fill' ? btnFill :
+                          savedToolBeforeStylus === 'picker' ? btnPicker :
+                          savedToolBeforeStylus === 'lasso' ? btnLasso : btnPen;
+        setActiveTool(savedToolBeforeStylus, targetBtn);
+      }
+      savedToolBeforeStylus = null;
+    }
+  }
+
   // Pointer Events
   function startDrawing(e) {
-    if (e.button !== 0 && e.button !== undefined) return;
+    const isStylusBarrel = checkStylusBarrelButton(e);
+    if (!isStylusBarrel && e.button !== 0 && e.button !== undefined) return;
     
     isDrawing = true;
     startPos = getCoordinates(e);
@@ -556,7 +580,6 @@ document.addEventListener('DOMContentLoaded', () => {
         color: currentColor,
         opacity: currentOpacity,
         size: currentSize,
-        blur: currentBlur,
         points: [startPos]
       };
       if (currentTool === 'eraser') {
@@ -564,7 +587,7 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         drawActiveStrokes();
       }
-      broadcast({ type: 'draw_live', strokeId: currentStrokeId, tool: currentTool, color: currentColor, opacity: currentOpacity, size: currentSize, blur: currentBlur, pos: startPos });
+      broadcast({ type: 'draw_live', strokeId: currentStrokeId, tool: currentTool, color: currentColor, opacity: currentOpacity, size: currentSize, pos: startPos });
     }
     try { activeCanvas.setPointerCapture(e.pointerId); } catch(err) {}
   }
@@ -593,6 +616,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     const pos = getCoordinates(e);
+
+    if (isDrawing) {
+      checkStylusBarrelButton(e);
+    }
 
     if (currentTool === 'lasso') {
       if (lassoState === 'selecting') {
@@ -749,6 +776,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     isDrawing = false;
+    releaseStylusBarrelButton();
     try { activeCanvas.releasePointerCapture(e.pointerId); } catch(err) {}
   }
 
@@ -758,6 +786,7 @@ document.addEventListener('DOMContentLoaded', () => {
   activeCanvas.addEventListener('pointercancel', stopDrawing);
   window.addEventListener('pointerup', stopDrawing);
   window.addEventListener('pointercancel', stopDrawing);
+  activeCanvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
   // Brush Preview Cursor UI
   const brushPreview = document.getElementById('brush-preview');
@@ -1061,27 +1090,6 @@ document.addEventListener('DOMContentLoaded', () => {
       updateOpacity(e.target.value);
     });
     updateOpacity(currentOpacity);
-  }
-
-  // Blur / Softness
-  const blurSlider = document.getElementById('blur-slider');
-  const blurIndicator = document.getElementById('blur-indicator');
-  
-  function updateBlur(val) {
-    currentBlur = parseInt(val, 10);
-    if (isNaN(currentBlur) || currentBlur < 0) currentBlur = 0;
-    localStorage.setItem('garlic_blur', currentBlur);
-    if (blurSlider) blurSlider.value = currentBlur;
-    if (blurIndicator) {
-      blurIndicator.style.filter = `blur(${currentBlur / 4}px)`;
-    }
-  }
-
-  if (blurSlider) {
-    blurSlider.addEventListener('input', (e) => {
-      updateBlur(e.target.value);
-    });
-    updateBlur(currentBlur);
   }
 
   // User Profile Settings

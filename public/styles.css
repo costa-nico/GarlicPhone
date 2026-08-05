@@ -156,14 +156,6 @@ body {
   transition: opacity 0.1s;
 }
 
-.blur-indicator {
-  width: 1.3cqw;
-  height: 1.3cqw;
-  background-color: var(--accent-color);
-  border-radius: 50%;
-  transition: filter 0.1s;
-}
-
 .toolbar-bottom {
   display: flex;
   flex-direction: column;
@@ -411,10 +403,7 @@ button {
   width: 100%;
   height: 100%;
   cursor: none;
-  /* Sharp crisp rendering: eliminates Gaussian blur / soft edges when scaling canvas */
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: crisp-edges;
-  image-rendering: pixelated;
+  image-rendering: auto;
 }
 
 #active-canvas {
