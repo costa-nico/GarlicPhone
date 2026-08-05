@@ -53,6 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const msg = JSON.parse(event.data);
     
     if (msg.type === 'sync') {
+      checkpointIndex = -1;
       eventsHistory = msg.history;
       renderHistory();
       // Remove stale remote cursors that are no longer active
@@ -71,9 +72,11 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (msg.type === 'disconnect') {
       removeRemoteCursor(msg.id);
     } else if (msg.type === 'undo') {
+      checkpointIndex = -1;
       eventsHistory = eventsHistory.filter(e => e.strokeId !== msg.strokeId);
       renderHistory();
     } else if (msg.type === 'clear') {
+      checkpointIndex = -1;
       eventsHistory = [];
       eventsHistory.push(msg);
       processEvent(msg);
@@ -360,7 +363,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     emitAndProcess(strokeObj);
     myStrokes.push(strokeObj.strokeId);
-    
+    checkpointIndex = -1;
     resetLasso();
   }
 
@@ -901,6 +904,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const undoneEvents = eventsHistory.filter(e => e.strokeId === lastStrokeId);
       myRedoStack.push({ strokeId: lastStrokeId, events: undoneEvents });
       broadcast({ type: 'undo', strokeId: lastStrokeId, userId });
+      checkpointIndex = -1;
       eventsHistory = eventsHistory.filter(e => e.strokeId !== lastStrokeId);
       renderHistory();
     }
@@ -910,6 +914,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (myRedoStack.length > 0) {
       const redoItem = myRedoStack.pop();
       myStrokes.push(redoItem.strokeId);
+      checkpointIndex = -1;
       redoItem.events.forEach(ev => {
         eventsHistory.push(ev);
         processEvent(ev);
@@ -963,6 +968,7 @@ document.addEventListener('DOMContentLoaded', () => {
   btnClear.addEventListener('click', () => {
     if (confirm("정말 화면을 모두 지우시겠습니까?")) {
       const msg = { type: 'clear', userId };
+      checkpointIndex = -1;
       emitAndProcess(msg);
       myRedoStack = []; // Clear redo stack on full clear
     }
