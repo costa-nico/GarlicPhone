@@ -561,12 +561,15 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function setCanvasZoom(newScale) {
-    canvasScale = Math.min(4.0, Math.max(1.0, Math.round(newScale * 100) / 100));
+    canvasScale = Math.min(4.0, Math.max(0.25, Math.round(newScale * 100) / 100));
+    if (canvasScale === 1.0 && canvasPanX === 0 && canvasPanY === 0) {
+      canvasPanX = 0;
+      canvasPanY = 0;
+    }
     updateCanvasTransform();
   }
 
   function panCanvas(dx, dy) {
-    if (canvasScale <= 1.0) return;
     const step = 80;
     canvasPanX += dx * step;
     canvasPanY += dy * step;
@@ -582,8 +585,8 @@ document.addEventListener('DOMContentLoaded', () => {
   let joystickVector = { x: 0, y: 0 };
 
   function processJoystickPan() {
-    if (isJoystickDragging && canvasScale > 1.0) {
-      const speed = 10 * (canvasScale / 2);
+    if (isJoystickDragging) {
+      const speed = 10 * Math.max(0.5, canvasScale / 2);
       canvasPanX -= joystickVector.x * speed; // INVERTED direction for intuitive camera panning!
       canvasPanY -= joystickVector.y * speed; // INVERTED direction for intuitive camera panning!
       updateCanvasTransform();
@@ -678,6 +681,8 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnZoomReset) {
     btnZoomReset.addEventListener('click', (e) => {
       e.stopPropagation();
+      canvasPanX = 0;
+      canvasPanY = 0;
       setCanvasZoom(1.0);
     });
   }
@@ -685,6 +690,8 @@ document.addEventListener('DOMContentLoaded', () => {
   if (zoomLevelText) {
     zoomLevelText.addEventListener('click', (e) => {
       e.stopPropagation();
+      canvasPanX = 0;
+      canvasPanY = 0;
       setCanvasZoom(1.0);
     });
   }
@@ -1439,19 +1446,29 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 3600);
   }
 
-  // Bottom-Up Fountain Emoji Burst ("와바박!" 터짐 반응)
+  // Bottom-Up Fountain Emoji Burst (Randomized Midpoint Pause Height)
   function spawnEmojiBurst(emoji) {
     if (!danmakuContainer || !emoji) return;
-    const count = 7;
+    const count = 8;
     for (let i = 0; i < count; i++) {
       setTimeout(() => {
         const el = document.createElement('div');
         el.className = 'emoji-burst-item';
         el.textContent = emoji;
 
-        const randomLeft = Math.floor(Math.random() * 70 + 15);
+        // 1. Random horizontal position (10% to 90% width)
+        const randomLeft = Math.floor(Math.random() * 80 + 10);
+        
+        // 2. Random MIDPOINT PAUSE HEIGHT (-20vh to -65vh) for each emoji!
+        const randomPauseY = -Math.floor(Math.random() * 45 + 20);
+
+        // 3. Random scale & wobble rotation
+        const randomScale = (Math.random() * 0.5 + 1.3).toFixed(2);
         const randomRot = Math.floor(Math.random() * 60 - 30);
+
         el.style.left = `${randomLeft}%`;
+        el.style.setProperty('--pause-y', `${randomPauseY}vh`);
+        el.style.setProperty('--scale', randomScale);
         el.style.setProperty('--rot', `${randomRot}deg`);
 
         danmakuContainer.appendChild(el);
@@ -1460,8 +1477,8 @@ document.addEventListener('DOMContentLoaded', () => {
           if (el.parentNode) {
             el.parentNode.removeChild(el);
           }
-        }, 2300);
-      }, i * 70);
+        }, 2600);
+      }, i * 65); // 65ms staggered explosion burst!
     }
   }
 

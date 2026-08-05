@@ -705,29 +705,33 @@ button {
   }
 }
 
-/* Bottom-Up Fountain Emoji Burst Animation ("와바박!" 터짐 효과) */
+/* Bottom-Up Fountain Emoji Burst Animation (Randomized Midpoint Pause & Rise) */
 .emoji-burst-item {
   position: absolute;
   bottom: -30px;
-  font-size: 3.6cqw;
+  font-size: 3.5cqw;
   pointer-events: none;
   will-change: transform, opacity;
-  animation: emoji-burst-up 2.2s cubic-bezier(0.15, 0.85, 0.35, 1.2) forwards;
+  animation: emoji-burst-pause-up 2.4s cubic-bezier(0.2, 0.9, 0.4, 1) forwards;
   filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.5));
   z-index: 115;
 }
 
-@keyframes emoji-burst-up {
+@keyframes emoji-burst-pause-up {
   0% {
-    transform: translateY(0) scale(0.4) rotate(0deg);
+    transform: translateY(0) scale(0.3) rotate(0deg);
     opacity: 1;
   }
-  30% {
+  35% {
     opacity: 1;
-    transform: translateY(-40vh) scale(1.5) rotate(var(--rot, 15deg));
+    transform: translateY(var(--pause-y, -40vh)) scale(var(--scale, 1.5)) rotate(var(--rot, 15deg));
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(calc(var(--pause-y, -40vh) - 3vh)) scale(calc(var(--scale, 1.5) * 1.08)) rotate(calc(var(--rot, 15deg) * 1.2));
   }
   100% {
-    transform: translateY(-95vh) scale(1.1) rotate(var(--rot, -20deg));
+    transform: translateY(-95vh) scale(1.0) rotate(calc(var(--rot, 15deg) * -1.5));
     opacity: 0;
   }
 }
