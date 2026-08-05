@@ -156,6 +156,14 @@ body {
   transition: opacity 0.1s;
 }
 
+.blur-indicator {
+  width: 1.3cqw;
+  height: 1.3cqw;
+  background-color: var(--accent-color);
+  border-radius: 50%;
+  transition: filter 0.1s;
+}
+
 .toolbar-bottom {
   display: flex;
   flex-direction: column;
