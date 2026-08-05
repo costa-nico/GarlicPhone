@@ -1,55 +1,92 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
   <title>갈릭폰 (GarlicPhone)</title>
   <link rel="icon" type="image/png" href="fav.png">
-  <link rel="shortcut icon" type="image/png" href="favicon.png">
+  <link rel="shortcut icon" type="image/png" href="fav.png">
   <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
   <div class="app-container">
     <header class="toolbar">
       <div class="toolbar-top">
         <div class="tools-grid">
           <button id="btn-pen" class="tool-btn active" title="연필 (Pen)">
-            <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+            <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+            </svg>
             <span class="tool-label">연필</span>
           </button>
           <button id="btn-eraser" class="tool-btn" title="지우개 (Eraser)">
-            <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20H7L3 16C2.5 15.5 2.5 14.5 3 14L13 4C13.5 3.5 14.5 3.5 15 4L20 9C20.5 9.5 20.5 10.5 20 11L11 20"></path><line x1="18" y1="13" x2="11" y2="20"></line></svg>
+            <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path
+                d="M20 20H7L3 16C2.5 15.5 2.5 14.5 3 14L13 4C13.5 3.5 14.5 3.5 15 4L20 9C20.5 9.5 20.5 10.5 20 11L11 20">
+              </path>
+              <line x1="18" y1="13" x2="11" y2="20"></line>
+            </svg>
             <span class="tool-label">지우개</span>
           </button>
-          
+
           <button id="btn-fill" class="tool-btn" title="채우기 (Fill)">
-            <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M19 11l-8-8-8.6 8.6a2 2 0 0 0 0 2.8l5.2 5.2a2 2 0 0 0 2.8 0L19 11z"></path><path d="M5 2l5 5"></path><path d="M2 13h15"></path><path d="M22 20a2 2 0 1 1-4 0c0-1.6 2-3 2-3s2 1.4 2 3z"></path></svg>
+            <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M19 11l-8-8-8.6 8.6a2 2 0 0 0 0 2.8l5.2 5.2a2 2 0 0 0 2.8 0L19 11z"></path>
+              <path d="M5 2l5 5"></path>
+              <path d="M2 13h15"></path>
+              <path d="M22 20a2 2 0 1 1-4 0c0-1.6 2-3 2-3s2 1.4 2 3z"></path>
+            </svg>
             <span class="tool-label">채우기</span>
           </button>
           <button id="btn-lasso" class="tool-btn" title="올가미 선택 (Lasso)">
-            <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M7 22a5 5 0 0 1-2-4c0-2 1.5-3.5 3-5 3-3 6-4 9-3 3 1 4 4 3 7-1 2.5-3 4-6 4-2 0-3-1-4-2.5"></path><path d="M12 12c-2-2-4-5-3-7 1-2 4-2 6 0 2 2 1 5-1 7"></path></svg>
+            <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M7 22a5 5 0 0 1-2-4c0-2 1.5-3.5 3-5 3-3 6-4 9-3 3 1 4 4 3 7-1 2.5-3 4-6 4-2 0-3-1-4-2.5"></path>
+              <path d="M12 12c-2-2-4-5-3-7 1-2 4-2 6 0 2 2 1 5-1 7"></path>
+            </svg>
             <span class="tool-label">올가미</span>
           </button>
-          
+
           <button id="btn-picker" class="tool-btn" title="컬러픽커 (Color Picker)">
-            <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M2 22l5.5-5.5"></path><path d="M15.5 2.5a2.828 2.828 0 1 1 4 4L7.5 18.5c-.3.3-.6.4-1 .4H3v-3.5c0-.4.1-.7.4-1L15.5 2.5z"></path></svg>
+            <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M2 22l5.5-5.5"></path>
+              <path d="M15.5 2.5a2.828 2.828 0 1 1 4 4L7.5 18.5c-.3.3-.6.4-1 .4H3v-3.5c0-.4.1-.7.4-1L15.5 2.5z"></path>
+            </svg>
             <span class="tool-label">스포이드</span>
           </button>
           <button id="btn-clear" class="tool-btn" title="화면 초기화 (Clear)">
-            <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"
+              stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
             <span class="tool-label">전체지우기</span>
           </button>
-          
+
           <button id="btn-undo" class="tool-btn" title="뒤로가기 (Undo)">
-            <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"></polyline><path d="M20 20v-7a4 4 0 0 0-4-4H4"></path></svg>
+            <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"
+              stroke-linejoin="round">
+              <polyline points="9 14 4 9 9 4"></polyline>
+              <path d="M20 20v-7a4 4 0 0 0-4-4H4"></path>
+            </svg>
             <span class="tool-label">실행취소</span>
           </button>
           <button id="btn-redo" class="tool-btn" title="앞으로가기 (Redo)">
-            <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 14 20 9 15 4"></polyline><path d="M4 20v-7a4 4 0 0 1 4-4h12"></path></svg>
+            <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"
+              stroke-linejoin="round">
+              <polyline points="15 14 20 9 15 4"></polyline>
+              <path d="M4 20v-7a4 4 0 0 1 4-4h12"></path>
+            </svg>
             <span class="tool-label">다시실행</span>
           </button>
         </div>
-        
+
         <div class="sliders-container">
           <div class="slider-wrapper" title="굵기 조절">
             <input type="range" id="size-slider" class="vertical-slider" min="1" max="100" value="10" orient="vertical">
@@ -58,22 +95,24 @@
             </div>
           </div>
           <div class="slider-wrapper" title="투명도 조절">
-            <input type="range" id="opacity-slider" class="vertical-slider" min="0.05" max="1" step="0.05" value="1" orient="vertical">
+            <input type="range" id="opacity-slider" class="vertical-slider" min="0.05" max="1" step="0.05" value="1"
+              orient="vertical">
             <div class="indicator-wrapper">
               <div id="opacity-indicator" class="opacity-indicator"></div>
             </div>
           </div>
         </div>
       </div>
-      
+
       <div class="toolbar-bottom">
         <div class="palette-container">
-          <input type="color" id="current-color-picker" class="current-color-display-wide" value="#000000" title="현재 선택된 색상 (클릭 시 커스텀 컬러 피커)">
+          <input type="color" id="current-color-picker" class="current-color-display-wide" value="#000000"
+            title="현재 선택된 색상 (클릭 시 커스텀 컬러 피커)">
           <div id="palette-grid" class="palette-grid">
             <!-- Dynamically populated from JS (3x6 fixed palette) -->
           </div>
         </div>
-        
+
         <!-- Integrated Navigation (Zoom & 360 Analog Joystick Knob) -->
         <div class="nav-controls-block" title="화면 이동 360도 조이스틱 및 확대/축소">
           <div class="joystick-wrapper" title="360도 드래그 캔버스 이동 조이스틱">
@@ -97,16 +136,19 @@
             <span id="online-user-count">1</span>명 접속 중
           </div>
           <input type="color" id="user-color-picker" class="user-color-picker" value="#FF3B30" title="네임태그 색상 선택">
-          <input type="text" id="user-name-input" class="user-name-input" value="익명" placeholder="닉네임" maxlength="12" title="닉네임 변경">
+          <input type="text" id="user-name-input" class="user-name-input" value="익명" placeholder="닉네임" maxlength="12"
+            title="닉네임 변경">
           <button id="btn-save" class="action-btn" title="그림 저장 (PNG 다운로드)">
-            <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"
+              stroke-linejoin="round">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
               <polyline points="7 10 12 15 17 10"></polyline>
               <line x1="12" y1="15" x2="12" y2="3"></line>
             </svg>
           </button>
           <button id="btn-copy" class="action-btn" title="그림 복사 (클립보드에 이미지 복사)">
-            <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"
+              stroke-linejoin="round">
               <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
               <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
             </svg>
@@ -129,7 +171,7 @@
         </div>
       </div>
     </header>
-    
+
     <main class="canvas-container">
       <canvas id="drawing-canvas"></canvas>
       <canvas id="active-canvas"></canvas>
@@ -137,7 +179,8 @@
       <div id="danmaku-container" class="danmaku-container"></div>
     </main>
   </div>
-  
+
   <script src="app.js"></script>
 </body>
+
 </html>
