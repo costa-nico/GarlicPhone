@@ -81,6 +81,20 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (msg.type === 'emoji_burst') {
       spawnEmojiBurst(msg.emoji);
       return;
+    } else if (msg.type === 'cursor' && msg.id !== userId) {
+      if (msg.pos) {
+        remoteCursors[msg.id] = {
+          id: msg.id,
+          name: msg.name || '상대방',
+          color: msg.color || '#FF9500',
+          pos: msg.pos,
+          size: msg.size || 8,
+          tool: msg.tool || 'pen',
+          lastSeen: Date.now()
+        };
+        drawActiveStrokes();
+      }
+      return;
     } else if (msg.type === 'clear') {
       checkpointIndex = -1;
       eventsHistory = [];
@@ -269,6 +283,75 @@ document.addEventListener('DOMContentLoaded', () => {
       activeCtx.stroke();
       activeCtx.restore();
     }
+
+    // Render Real-Time Remote Cursors (상대방 펜 커서 & 닉네임 태그)
+    renderRemoteCursors();
+  }
+
+  let remoteCursors = {}; // userId -> { id, name, color, pos, size, tool, lastSeen }
+
+  function renderRemoteCursors() {
+    const now = Date.now();
+    Object.keys(remoteCursors).forEach(id => {
+      const cur = remoteCursors[id];
+      if (now - cur.lastSeen > 3000) {
+        delete remoteCursors[id];
+        return;
+      }
+
+      if (!cur.pos) return;
+      const { x, y } = cur.pos;
+      const radius = Math.max(5, (cur.size || 8) / 2);
+
+      activeCtx.save();
+
+      // 1. Draw brush cursor ring matching remote user's color
+      activeCtx.strokeStyle = cur.color || '#FF9500';
+      activeCtx.lineWidth = 2.5;
+      activeCtx.beginPath();
+      activeCtx.arc(x, y, radius, 0, Math.PI * 2);
+      activeCtx.stroke();
+
+      // 2. Draw crosshair center dot
+      activeCtx.fillStyle = cur.color || '#FF9500';
+      activeCtx.beginPath();
+      activeCtx.arc(x, y, 2.5, 0, Math.PI * 2);
+      activeCtx.fill();
+
+      // 3. Draw nickname badge pill tag [Name] above cursor
+      const label = cur.name || '상대방';
+      activeCtx.font = 'bold 15px sans-serif';
+      const textWidth = activeCtx.measureText(label).width;
+      const tagPadding = 8;
+      const tagWidth = textWidth + tagPadding * 2;
+      const tagHeight = 22;
+      const tagX = x - tagWidth / 2;
+      const tagY = y - radius - tagHeight - 8;
+
+      // Outer Shadow
+      activeCtx.shadowColor = 'rgba(0,0,0,0.4)';
+      activeCtx.shadowBlur = 6;
+      activeCtx.shadowOffsetY = 2;
+
+      // Tag Background Pill
+      activeCtx.fillStyle = cur.color || '#FF9500';
+      activeCtx.beginPath();
+      if (activeCtx.roundRect) {
+        activeCtx.roundRect(tagX, tagY, tagWidth, tagHeight, 11);
+      } else {
+        activeCtx.rect(tagX, tagY, tagWidth, tagHeight);
+      }
+      activeCtx.fill();
+
+      // Tag Text
+      activeCtx.shadowColor = 'transparent';
+      activeCtx.fillStyle = '#FFFFFF';
+      activeCtx.textAlign = 'center';
+      activeCtx.textBaseline = 'middle';
+      activeCtx.fillText(label, x, tagY + tagHeight / 2 + 1);
+
+      activeCtx.restore();
+    });
   }
 
   function buildSnapshotCheckpoint() {
@@ -794,17 +877,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let lastCursorSend = 0;
   function draw(e) {
-    // Broadcast cursor position (Throttled to 20 times a second to save bandwidth)
-    const normPos = getNormalizedCursorPos(e);
-    if (normPos.x >= 0 && normPos.x <= 1 && normPos.y >= 0 && normPos.y <= 1) {
+    // Broadcast cursor position (Logical coordinates, throttled to 30fps = ~35ms)
+    const pos = getCoordinates(e);
+    if (pos.x >= 0 && pos.x <= LOGICAL_WIDTH && pos.y >= 0 && pos.y <= LOGICAL_HEIGHT) {
       const now = Date.now();
-      if (now - lastCursorSend > 50) {
-        broadcast({ type: 'cursor', id: userId, name: userName, color: userColor, pos: normPos });
+      if (now - lastCursorSend > 35) {
+        broadcast({
+          type: 'cursor',
+          id: userId,
+          name: userName,
+          color: userColor,
+          pos: { x: Math.round(pos.x), y: Math.round(pos.y) },
+          size: currentSize,
+          tool: currentTool
+        });
         lastCursorSend = now;
       }
     }
 
-    // Update Brush Preview Cursor on every pointermove
+    // Update Local Brush Preview Cursor
     updateBrushPreview(e);
 
     if (!isDrawing) return;
