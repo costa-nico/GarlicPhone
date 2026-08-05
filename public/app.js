@@ -904,8 +904,6 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     
-    const pos = getCoordinates(e);
-
     if (isDrawing) {
       checkStylusBarrelButton(e);
     }
