@@ -54,35 +54,10 @@ document.addEventListener('DOMContentLoaded', () => {
     
     if (msg.type === 'sync') {
       checkpointIndex = -1;
-      eventsHistory = msg.history;
+      eventsHistory = msg.history || [];
       renderHistory();
-      // Remove stale remote cursors that are no longer active
-      Object.keys(remoteCursors).forEach(id => {
-        if (!msg.users || !msg.users[id]) {
-          removeRemoteCursor(id);
-        }
-      });
-      // Handle active remote cursors
-      Object.keys(msg.users || {}).forEach(id => {
-        if (id !== userId) updateRemoteCursor(id, msg.users[id]);
-      });
-      updateOnlineUserCount();
     } else if (msg.type === 'cursor') {
-      if (msg.id !== userId) updateRemoteCursor(msg.id, msg);
-    } else if (msg.type === 'disconnect') {
-      removeRemoteCursor(msg.id);
-    } else if (msg.type === 'undo') {
-      checkpointIndex = -1;
-      eventsHistory = eventsHistory.filter(e => e.strokeId !== msg.strokeId);
-      renderHistory();
-    } else if (msg.type === 'chat') {
-      spawnDanmakuMessage(msg.text, msg.name, msg.color);
-      return;
-    } else if (msg.type === 'emoji_burst') {
-      spawnEmojiBurst(msg.emoji);
-      return;
-    } else if (msg.type === 'cursor' && msg.id !== userId) {
-      if (msg.pos) {
+      if (msg.id !== userId && msg.pos) {
         remoteCursors[msg.id] = {
           id: msg.id,
           name: msg.name || '상대방',
@@ -94,6 +69,21 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         drawActiveStrokes();
       }
+    } else if (msg.type === 'disconnect') {
+      if (remoteCursors[msg.id]) {
+        delete remoteCursors[msg.id];
+        updateOnlineUserCount();
+        drawActiveStrokes();
+      }
+    } else if (msg.type === 'undo') {
+      checkpointIndex = -1;
+      eventsHistory = eventsHistory.filter(e => e.strokeId !== msg.strokeId);
+      renderHistory();
+    } else if (msg.type === 'chat') {
+      spawnDanmakuMessage(msg.text, msg.name, msg.color);
+      return;
+    } else if (msg.type === 'emoji_burst') {
+      spawnEmojiBurst(msg.emoji);
       return;
     } else if (msg.type === 'clear') {
       checkpointIndex = -1;
