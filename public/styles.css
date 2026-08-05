@@ -425,3 +425,119 @@ button {
   display: none;
   transition: width 0.05s ease, height 0.05s ease;
 }
+
+/* Floating Zoom & Pan Controls Widget */
+.zoom-controls {
+  position: absolute;
+  bottom: 1cqw;
+  right: 1cqw;
+  display: flex;
+  align-items: center;
+  gap: 0.5cqw;
+  background-color: rgba(44, 44, 46, 0.88);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 0.4cqw 0.6cqw;
+  border-radius: 0.8cqw;
+  z-index: 120;
+  box-shadow: 0 0.3cqw 0.8cqw rgba(0, 0, 0, 0.3);
+  user-select: none;
+}
+
+.pan-dpad {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15cqw;
+}
+
+.pan-row {
+  display: flex;
+  align-items: center;
+  gap: 0.15cqw;
+}
+
+.pan-btn {
+  background-color: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  border: none;
+  width: 1.3cqw;
+  height: 1.3cqw;
+  border-radius: 0.3cqw;
+  font-size: 0.75cqw;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.pan-btn:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+.pan-btn:active {
+  transform: scale(0.9);
+}
+
+.pan-center-btn {
+  font-size: 0.55cqw;
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.zoom-divider {
+  width: 1px;
+  height: 2.2cqw;
+  background-color: rgba(255, 255, 255, 0.2);
+  margin: 0 0.2cqw;
+}
+
+.zoom-slider-group {
+  display: flex;
+  align-items: center;
+  gap: 0.3cqw;
+}
+
+.zoom-btn {
+  background-color: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  border: none;
+  width: 1.8cqw;
+  height: 1.8cqw;
+  border-radius: 0.4cqw;
+  font-size: 1.1cqw;
+  font-weight: 700;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.zoom-btn:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+  transform: scale(1.05);
+}
+
+.zoom-btn:active {
+  transform: scale(0.95);
+}
+
+.zoom-text {
+  color: #ffffff;
+  font-size: 0.75cqw;
+  font-weight: 700;
+  padding: 0 0.4cqw;
+  cursor: pointer;
+  min-width: 3cqw;
+  text-align: center;
+}
+.zoom-text:hover {
+  color: #5AC8FA;
+}
+
+.reset-btn {
+  font-size: 0.9cqw;
+  background-color: rgba(255, 255, 255, 0.08);
+}

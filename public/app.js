@@ -529,102 +529,106 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // --- Canvas Zoom & Pan Engine (2-Finger Touch Pinch-Zoom) ---
+  // --- Canvas Zoom & Pan Engine (Zoom & D-Pad Widget) ---
   let canvasScale = 1.0;
   let canvasPanX = 0;
   let canvasPanY = 0;
 
-  const activePointers = new Map(); // pointerId -> { x, y }
-  let initialPinchDistance = 0;
-  let initialScale = 1.0;
-  let initialPan = { x: 0, y: 0 };
-  let pinchCenter = { x: 0, y: 0 };
-  let isPinchingOrPanning = false;
-
   function updateCanvasTransform() {
-    const transformStr = `translate(${canvasPanX}px, ${canvasPanY}px) scale(${canvasScale})`;
+    if (canvasScale === 1.0) {
+      canvasPanX = 0;
+      canvasPanY = 0;
+    }
+    const transformStr = (canvasScale === 1.0 && canvasPanX === 0 && canvasPanY === 0)
+      ? ''
+      : `translate(${canvasPanX}px, ${canvasPanY}px) scale(${canvasScale})`;
+    
     canvas.style.transform = transformStr;
     activeCanvas.style.transform = transformStr;
-    canvas.style.transformOrigin = '0 0';
-    activeCanvas.style.transformOrigin = '0 0';
-  }
+    canvas.style.transformOrigin = 'center center';
+    activeCanvas.style.transformOrigin = 'center center';
 
-  function handlePointerDownPinch(e) {
-    activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-
-    if (activePointers.size >= 2) {
-      if (isDrawing || currentStrokeId) {
-        isDrawing = false;
-        if (currentStrokeId) {
-          if (activeStrokes[currentStrokeId]) {
-            delete activeStrokes[currentStrokeId];
-            drawActiveStrokes();
-          }
-          broadcast({ type: 'undo', strokeId: currentStrokeId, userId });
-          currentStrokeId = null;
-        }
-      }
-
-      isPinchingOrPanning = true;
-
-      const pts = Array.from(activePointers.values());
-      const p1 = pts[0];
-      const p2 = pts[1];
-
-      initialPinchDistance = Math.hypot(p2.x - p1.x, p2.y - p1.y);
-      initialScale = canvasScale;
-      initialPan = { x: canvasPanX, y: canvasPanY };
-      pinchCenter = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
+    const zoomText = document.getElementById('zoom-level-text');
+    if (zoomText) {
+      zoomText.textContent = `${Math.round(canvasScale * 100)}%`;
     }
   }
 
-  function handlePointerMovePinch(e) {
-    if (!activePointers.has(e.pointerId)) return false;
-    activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-
-    if (activePointers.size >= 2) {
-      isPinchingOrPanning = true;
-      const pts = Array.from(activePointers.values());
-      const p1 = pts[0];
-      const p2 = pts[1];
-
-      const currentDistance = Math.hypot(p2.x - p1.x, p2.y - p1.y);
-      if (initialPinchDistance > 0) {
-        const scaleFactor = currentDistance / initialPinchDistance;
-        let newScale = Math.min(4.0, Math.max(1.0, initialScale * scaleFactor));
-        
-        const currentCenter = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
-        const deltaX = currentCenter.x - pinchCenter.x;
-        const deltaY = currentCenter.y - pinchCenter.y;
-
-        if (newScale === 1.0) {
-          canvasScale = 1.0;
-          canvasPanX = 0;
-          canvasPanY = 0;
-        } else {
-          canvasScale = newScale;
-          canvasPanX = initialPan.x + deltaX;
-          canvasPanY = initialPan.y + deltaY;
-        }
-        updateCanvasTransform();
-      }
-      return true;
-    }
-    return false;
+  function setCanvasZoom(newScale) {
+    canvasScale = Math.min(4.0, Math.max(1.0, Math.round(newScale * 100) / 100));
+    updateCanvasTransform();
   }
 
-  function handlePointerUpPinch(e) {
-    activePointers.delete(e.pointerId);
-    if (activePointers.size < 2) {
-      isPinchingOrPanning = false;
-    }
+  function panCanvas(dx, dy) {
+    if (canvasScale <= 1.0) return;
+    const step = 80;
+    canvasPanX += dx * step;
+    canvasPanY += dy * step;
+    updateCanvasTransform();
+  }
+
+  const btnZoomIn = document.getElementById('btn-zoom-in');
+  const btnZoomOut = document.getElementById('btn-zoom-out');
+  const btnZoomReset = document.getElementById('btn-zoom-reset');
+  const zoomLevelText = document.getElementById('zoom-level-text');
+
+  const btnPanUp = document.getElementById('btn-pan-up');
+  const btnPanDown = document.getElementById('btn-pan-down');
+  const btnPanLeft = document.getElementById('btn-pan-left');
+  const btnPanRight = document.getElementById('btn-pan-right');
+  const btnPanReset = document.getElementById('btn-pan-reset');
+
+  if (btnZoomIn) {
+    btnZoomIn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setCanvasZoom(canvasScale + 0.25);
+    });
+  }
+
+  if (btnZoomOut) {
+    btnZoomOut.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setCanvasZoom(canvasScale - 0.25);
+    });
+  }
+
+  if (btnZoomReset) {
+    btnZoomReset.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setCanvasZoom(1.0);
+    });
+  }
+
+  if (zoomLevelText) {
+    zoomLevelText.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setCanvasZoom(1.0);
+    });
+  }
+
+  if (btnPanUp) {
+    btnPanUp.addEventListener('click', (e) => { e.stopPropagation(); panCanvas(0, 1); });
+  }
+  if (btnPanDown) {
+    btnPanDown.addEventListener('click', (e) => { e.stopPropagation(); panCanvas(0, -1); });
+  }
+  if (btnPanLeft) {
+    btnPanLeft.addEventListener('click', (e) => { e.stopPropagation(); panCanvas(1, 0); });
+  }
+  if (btnPanRight) {
+    btnPanRight.addEventListener('click', (e) => { e.stopPropagation(); panCanvas(-1, 0); });
+  }
+  if (btnPanReset) {
+    btnPanReset.addEventListener('click', (e) => {
+      e.stopPropagation();
+      canvasPanX = 0;
+      canvasPanY = 0;
+      updateCanvasTransform();
+    });
   }
 
   // Pointer Events
   function startDrawing(e) {
-    handlePointerDownPinch(e);
-    if (activePointers.size >= 2 || isPinchingOrPanning) return;
-
     const isStylusBarrel = checkStylusBarrelButton(e);
     if (!isStylusBarrel && e.button !== 0 && e.button !== undefined) return;
     
@@ -690,9 +694,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let lastCursorSend = 0;
   function draw(e) {
-    if (handlePointerMovePinch(e)) return;
-    if (isPinchingOrPanning) return;
-
     // Broadcast cursor position (Throttled to 20 times a second to save bandwidth)
     const normPos = getNormalizedCursorPos(e);
     if (normPos.x >= 0 && normPos.x <= 1 && normPos.y >= 0 && normPos.y <= 1) {
@@ -762,8 +763,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function stopDrawing(e) {
-    handlePointerUpPinch(e);
-    if (isPinchingOrPanning) return;
     if (!isDrawing) return;
     
     if (currentTool === 'lasso') {
