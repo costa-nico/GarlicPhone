@@ -553,11 +553,15 @@ document.addEventListener('DOMContentLoaded', () => {
     activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
     if (activePointers.size >= 2) {
-      if (isDrawing) {
+      if (isDrawing || currentStrokeId) {
         isDrawing = false;
-        if (currentStrokeId && activeStrokes[currentStrokeId]) {
-          delete activeStrokes[currentStrokeId];
-          drawActiveStrokes();
+        if (currentStrokeId) {
+          if (activeStrokes[currentStrokeId]) {
+            delete activeStrokes[currentStrokeId];
+            drawActiveStrokes();
+          }
+          broadcast({ type: 'undo', strokeId: currentStrokeId, userId });
+          currentStrokeId = null;
         }
       }
 
@@ -888,14 +892,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function updateBrushPreview(e) {
     if (!brushPreview) return;
+    const containerRect = canvas.parentElement.getBoundingClientRect();
     const rect = canvas.getBoundingClientRect();
     const scale = rect.width / LOGICAL_WIDTH;
     const displaySize = Math.max(4, currentSize * scale);
     
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const x = e.clientX - containerRect.left;
+    const y = e.clientY - containerRect.top;
     
-    if (x < 0 || x > rect.width || y < 0 || y > rect.height) {
+    if (x < 0 || x > containerRect.width || y < 0 || y > containerRect.height) {
       brushPreview.style.display = 'none';
       return;
     }
