@@ -582,15 +582,16 @@ button {
   color: #0051a8;
 }
 
-/* Niconico Style Flying Chat & Quick Emoji Bar */
+/* Niconico Style Flying Chat & Quick Emoji Bar (Enlarged UI) */
 .chat-bar {
   width: 95%;
   display: flex;
   flex-direction: column;
-  gap: 0.25cqw;
+  gap: 0.4cqw;
   background-color: #e8e8ed;
-  padding: 0.3cqw 0.4cqw;
+  padding: 0.4cqw 0.5cqw;
   border-radius: 0.6cqw;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .emoji-quick-bar {
@@ -603,57 +604,70 @@ button {
 .emoji-btn {
   background-color: #ffffff;
   border: 1px solid var(--border-color);
-  border-radius: 0.3cqw;
-  font-size: 0.95cqw;
-  padding: 0.15cqw 0.3cqw;
+  border-radius: 0.4cqw;
+  font-size: 1.3cqw;
+  padding: 0.25cqw 0.45cqw;
   cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.08);
   transition: transform 0.15s ease, background-color 0.15s ease;
 }
 
 .emoji-btn:hover {
-  transform: scale(1.2);
+  transform: scale(1.25);
   background-color: #fff0f5;
+  z-index: 5;
 }
 
 .emoji-btn:active {
-  transform: scale(0.9);
+  transform: scale(0.85);
 }
 
 .chat-input-wrapper {
   display: flex;
   align-items: center;
-  gap: 0.2cqw;
+  gap: 0.3cqw;
   width: 100%;
 }
 
 .chat-input {
   flex: 1;
   border: 1px solid #ccc;
-  border-radius: 0.3cqw;
-  padding: 0.2cqw 0.4cqw;
-  font-size: 0.75cqw;
+  border-radius: 0.4cqw;
+  padding: 0.35cqw 0.6cqw;
+  font-size: 0.9cqw;
+  height: 2.2cqw;
   outline: none;
+  background-color: #ffffff;
+  box-sizing: border-box;
 }
 .chat-input:focus {
   border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2);
 }
 
 .chat-send-btn {
   background-color: var(--accent-color);
   color: #ffffff;
   border: none;
-  border-radius: 0.3cqw;
-  padding: 0.2cqw 0.5cqw;
-  font-size: 0.75cqw;
-  font-weight: 700;
+  border-radius: 0.4cqw;
+  padding: 0.35cqw 0.8cqw;
+  font-size: 0.95cqw;
+  font-weight: 800;
+  height: 2.2cqw;
+  min-width: 3.8cqw;
   cursor: pointer;
-  transition: opacity 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  transition: all 0.15s ease;
 }
 .chat-send-btn:hover {
-  opacity: 0.9;
+  opacity: 0.92;
+  transform: scale(1.04);
+}
+.chat-send-btn:active {
+  transform: scale(0.96);
 }
 
-/* Niconico Danmaku Flying Chat Overlay */
+/* Niconico Danmaku Flying Chat Overlay (Fast & Instant 3.5s) */
 .danmaku-container {
   position: absolute;
   top: 0;
@@ -668,18 +682,18 @@ button {
 .danmaku-item {
   position: absolute;
   white-space: nowrap;
-  font-weight: 800;
-  font-size: 1.8cqw;
+  font-weight: 900;
+  font-size: 2.2cqw;
   color: #ffffff;
   text-shadow: 
-    -1.5px -1.5px 0 #000, 
-     1.5px -1.5px 0 #000, 
-    -1.5px  1.5px 0 #000, 
-     1.5px  1.5px 0 #000,
-     0 3px 8px rgba(0, 0, 0, 0.7);
+    -2px -2px 0 #000, 
+     2px -2px 0 #000, 
+    -2px  2px 0 #000, 
+     2px  2px 0 #000,
+     0 4px 10px rgba(0, 0, 0, 0.8);
   will-change: transform;
   pointer-events: none;
-  animation: danmaku-fly 6s linear forwards;
+  animation: danmaku-fly 3.5s linear forwards;
 }
 
 @keyframes danmaku-fly {
@@ -688,6 +702,33 @@ button {
   }
   100% {
     transform: translateX(-100%);
+  }
+}
+
+/* Bottom-Up Fountain Emoji Burst Animation ("와바박!" 터짐 효과) */
+.emoji-burst-item {
+  position: absolute;
+  bottom: -30px;
+  font-size: 3.6cqw;
+  pointer-events: none;
+  will-change: transform, opacity;
+  animation: emoji-burst-up 2.2s cubic-bezier(0.15, 0.85, 0.35, 1.2) forwards;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.5));
+  z-index: 115;
+}
+
+@keyframes emoji-burst-up {
+  0% {
+    transform: translateY(0) scale(0.4) rotate(0deg);
+    opacity: 1;
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-40vh) scale(1.5) rotate(var(--rot, 15deg));
+  }
+  100% {
+    transform: translateY(-95vh) scale(1.1) rotate(var(--rot, -20deg));
+    opacity: 0;
   }
 }
 

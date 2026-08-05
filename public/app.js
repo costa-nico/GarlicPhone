@@ -78,6 +78,9 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (msg.type === 'chat') {
       spawnDanmakuMessage(msg.text, msg.name, msg.color);
       return;
+    } else if (msg.type === 'emoji_burst') {
+      spawnEmojiBurst(msg.emoji);
+      return;
     } else if (msg.type === 'clear') {
       checkpointIndex = -1;
       eventsHistory = [];
@@ -1408,7 +1411,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 2500);
   }
 
-  // --- Niconico Danmaku Flying Chat System ---
+  // --- Niconico Danmaku Flying Chat System & Emoji Burst ---
   const danmakuContainer = document.getElementById('danmaku-container');
   const chatInput = document.getElementById('chat-input');
   const btnSendChat = document.getElementById('btn-send-chat');
@@ -1433,7 +1436,33 @@ document.addEventListener('DOMContentLoaded', () => {
       if (el.parentNode) {
         el.parentNode.removeChild(el);
       }
-    }, 6200);
+    }, 3600);
+  }
+
+  // Bottom-Up Fountain Emoji Burst ("와바박!" 터짐 반응)
+  function spawnEmojiBurst(emoji) {
+    if (!danmakuContainer || !emoji) return;
+    const count = 7;
+    for (let i = 0; i < count; i++) {
+      setTimeout(() => {
+        const el = document.createElement('div');
+        el.className = 'emoji-burst-item';
+        el.textContent = emoji;
+
+        const randomLeft = Math.floor(Math.random() * 70 + 15);
+        const randomRot = Math.floor(Math.random() * 60 - 30);
+        el.style.left = `${randomLeft}%`;
+        el.style.setProperty('--rot', `${randomRot}deg`);
+
+        danmakuContainer.appendChild(el);
+
+        setTimeout(() => {
+          if (el.parentNode) {
+            el.parentNode.removeChild(el);
+          }
+        }, 2300);
+      }, i * 70);
+    }
   }
 
   function sendChatMessage(text) {
@@ -1458,11 +1487,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Quick Emoji Buttons
+  // Quick Emoji Burst Buttons
   document.querySelectorAll('.emoji-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const emoji = btn.dataset.emoji;
-      sendChatMessage(emoji);
+      spawnEmojiBurst(emoji);
+      broadcast({ type: 'emoji_burst', emoji });
     });
   });
 
