@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
     localStorage.setItem('garlic_user_id', userId);
   }
   const vibrantColors = ['#FF3B30', '#FF9500', '#FFCC00', '#4CD964', '#5AC8FA', '#007AFF', '#5856D6', '#FF2D55'];
-  let userColor = localStorage.getItem('garlic_user_color') || vibrantColors[Math.floor(Math.random() * vibrantColors.length)];
+  let userColor = localStorage.getItem('garlic_nametag_color') || vibrantColors[Math.floor(Math.random() * vibrantColors.length)];
   let userName = localStorage.getItem('garlic_user_name') || ("익명" + Math.floor(Math.random() * 90 + 10));
   
   let eventsHistory = [];
@@ -322,7 +322,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- Local Drawing State (Restored from localStorage if available) ---
   let isDrawing = false;
   let currentTool = 'pen';
-  let currentColor = '#000000';
+  let currentColor = localStorage.getItem('garlic_pen_color') || '#000000';
   let penSize = parseInt(localStorage.getItem('garlic_pen_size'), 10) || 8;
   let eraserSize = parseInt(localStorage.getItem('garlic_eraser_size'), 10) || 30;
   let currentSize = penSize;
@@ -1214,7 +1214,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function updateColorUI(hex) {
     hex = hex.toUpperCase();
     if (customColorPicker) customColorPicker.value = hex;
-    localStorage.setItem('garlic_user_color', hex);
+    localStorage.setItem('garlic_pen_color', hex);
     
     if (paletteGrid) {
       paletteGrid.querySelectorAll('.color-btn').forEach(btn => {
@@ -1302,7 +1302,7 @@ document.addEventListener('DOMContentLoaded', () => {
     userColorPicker.value = userColor;
     userColorPicker.addEventListener('input', (e) => {
       userColor = e.target.value;
-      localStorage.setItem('garlic_user_color', userColor);
+      localStorage.setItem('garlic_nametag_color', userColor);
     });
   }
 
