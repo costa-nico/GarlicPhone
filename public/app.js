@@ -13,11 +13,9 @@ document.addEventListener('DOMContentLoaded', () => {
   activeCanvas.width = LOGICAL_WIDTH;
   activeCanvas.height = LOGICAL_HEIGHT;
   
-  // Set context properties
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = 'high';
-  activeCtx.imageSmoothingEnabled = true;
-  activeCtx.imageSmoothingQuality = 'high';
+  // Set context properties (Sharp crisp rendering without soft Gaussian blur)
+  ctx.imageSmoothingEnabled = false;
+  activeCtx.imageSmoothingEnabled = false;
 
   // Snapshot Checkpoint Cache (Non-destructive rendering acceleration)
   const snapshotCanvas = document.createElement('canvas');
@@ -156,16 +154,18 @@ document.addEventListener('DOMContentLoaded', () => {
       targetCtx.restore();
       
       // 2. Draw cutout image at new destination
+      const dstX = Math.round(item.dstPos.x);
+      const dstY = Math.round(item.dstPos.y);
       if (item._img && (item._img.complete || item._img instanceof HTMLCanvasElement)) {
         try {
-          targetCtx.drawImage(item._img, item.dstPos.x, item.dstPos.y);
+          targetCtx.drawImage(item._img, dstX, dstY);
         } catch(err) {}
       } else if (item.dataUrl) {
         const img = new Image();
         img.onload = () => {
           item._img = img;
           try {
-            targetCtx.drawImage(img, item.dstPos.x, item.dstPos.y);
+            targetCtx.drawImage(img, dstX, dstY);
             drawActiveStrokes();
           } catch(err) {}
         };
@@ -173,7 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (img.complete) {
           item._img = img;
           try {
-            targetCtx.drawImage(img, item.dstPos.x, item.dstPos.y);
+            targetCtx.drawImage(img, dstX, dstY);
           } catch(err) {}
         }
       }
@@ -241,8 +241,8 @@ document.addEventListener('DOMContentLoaded', () => {
       activeCtx.stroke();
       activeCtx.restore();
     } else if ((lassoState === 'selected' || lassoState === 'dragging') && lassoCutoutCanvas && lassoBoundingBox) {
-      const offsetX = lassoBoundingBox.minX + lassoDragOffset.x;
-      const offsetY = lassoBoundingBox.minY + lassoDragOffset.y;
+      const offsetX = Math.round(lassoBoundingBox.minX + lassoDragOffset.x);
+      const offsetY = Math.round(lassoBoundingBox.minY + lassoDragOffset.y);
       
       activeCtx.drawImage(lassoCutoutCanvas, offsetX, offsetY);
       
@@ -345,8 +345,8 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     
-    const finalX = lassoBoundingBox.minX + lassoDragOffset.x;
-    const finalY = lassoBoundingBox.minY + lassoDragOffset.y;
+    const finalX = Math.round(lassoBoundingBox.minX + lassoDragOffset.x);
+    const finalY = Math.round(lassoBoundingBox.minY + lassoDragOffset.y);
     
     // Draw the cutout permanently onto main canvas
     ctx.drawImage(lassoCutoutCanvas, finalX, finalY);
@@ -586,7 +586,10 @@ document.addEventListener('DOMContentLoaded', () => {
         lassoPath.push(pos);
         drawActiveStrokes();
       } else if (lassoState === 'dragging') {
-        lassoDragOffset = { x: pos.x - lassoDragStart.x, y: pos.y - lassoDragStart.y };
+        lassoDragOffset = {
+          x: Math.round(pos.x - lassoDragStart.x),
+          y: Math.round(pos.y - lassoDragStart.y)
+        };
         drawActiveStrokes();
       }
       return;
@@ -627,16 +630,20 @@ document.addEventListener('DOMContentLoaded', () => {
     if (currentTool === 'lasso') {
       if (lassoState === 'selecting') {
         if (lassoPath.length > 5) {
-          let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+          let rawMinX = Infinity, rawMinY = Infinity, rawMaxX = -Infinity, rawMaxY = -Infinity;
           lassoPath.forEach(pt => {
-            if (pt.x < minX) minX = pt.x;
-            if (pt.y < minY) minY = pt.y;
-            if (pt.x > maxX) maxX = pt.x;
-            if (pt.y > maxY) maxY = pt.y;
+            if (pt.x < rawMinX) rawMinX = pt.x;
+            if (pt.y < rawMinY) rawMinY = pt.y;
+            if (pt.x > rawMaxX) rawMaxX = pt.x;
+            if (pt.y > rawMaxY) rawMaxY = pt.y;
           });
           
-          const width = Math.ceil(maxX - minX);
-          const height = Math.ceil(maxY - minY);
+          const minX = Math.floor(rawMinX);
+          const minY = Math.floor(rawMinY);
+          const maxX = Math.ceil(rawMaxX);
+          const maxY = Math.ceil(rawMaxY);
+          const width = maxX - minX;
+          const height = maxY - minY;
           
           if (width >= 5 && height >= 5) {
             lassoBoundingBox = { minX, minY, maxX, maxY, width, height };

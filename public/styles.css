@@ -403,8 +403,10 @@ button {
   width: 100%;
   height: 100%;
   cursor: none;
-  /* Anti-aliasing enabled: smoothly scale the 1600x1200 logical canvas to CSS size */
-  image-rendering: auto;
+  /* Sharp crisp rendering: eliminates Gaussian blur / soft edges when scaling canvas */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
 }
 
 #active-canvas {
