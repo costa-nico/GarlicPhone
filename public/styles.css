@@ -25,11 +25,11 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
-  height: 100dvh;
+  min-height: 100vh;
+  min-height: 100dvh;
   width: 100vw;
   width: 100dvw;
-  overflow: hidden;
+  overflow: auto;
 }
 
 /* 16:9 container that scales to fit the screen */
