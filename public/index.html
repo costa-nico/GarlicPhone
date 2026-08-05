@@ -85,6 +85,7 @@
             <span id="zoom-level-text" class="zoom-text" title="현재 확대율 (클릭 시 100% 원위치)">100%</span>
             <button id="btn-zoom-in" class="zoom-btn" title="확대 (+)">+</button>
             <button id="btn-zoom-reset" class="zoom-btn reset-btn" title="100% 원위치 리셋">⟲</button>
+            <button id="btn-fullscreen" class="zoom-btn fullscreen-btn" title="전체화면 전환 (Fullscreen)">⛶</button>
           </div>
         </div>
 
@@ -102,11 +103,27 @@
               <line x1="12" y1="15" x2="12" y2="3"></line>
             </svg>
           </button>
-          <button id="btn-fullscreen" class="action-btn" title="전체화면 전환 (Fullscreen)">
+          <button id="btn-copy" class="action-btn" title="그림 복사 (클립보드에 이미지 복사)">
             <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
             </svg>
           </button>
+        </div>
+
+        <!-- Niconico Style Flying Chat & Emoji Reaction Bar -->
+        <div class="chat-bar" title="니코동 스타일 탄막 실시간 채팅 및 이모지 반응">
+          <div class="emoji-quick-bar">
+            <button class="emoji-btn" data-emoji="❤️" title="하트 이모지">❤️</button>
+            <button class="emoji-btn" data-emoji="👍" title="따봉 이모지">👍</button>
+            <button class="emoji-btn" data-emoji="😂" title="ㅋㅋㅋ 이모지">😂</button>
+            <button class="emoji-btn" data-emoji="🔥" title="불타오름 이모지">🔥</button>
+            <button class="emoji-btn" data-emoji="🎉" title="축하 파티 이모지">🎉</button>
+          </div>
+          <div class="chat-input-wrapper">
+            <input type="text" id="chat-input" class="chat-input" placeholder="메시지 입력 (Enter로 슝~)" maxlength="40">
+            <button id="btn-send-chat" class="chat-send-btn">전송</button>
+          </div>
         </div>
       </div>
     </header>
@@ -115,6 +132,7 @@
       <canvas id="drawing-canvas"></canvas>
       <canvas id="active-canvas"></canvas>
       <div id="brush-preview" class="brush-preview"></div>
+      <div id="danmaku-container" class="danmaku-container"></div>
     </main>
   </div>
   

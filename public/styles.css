@@ -582,9 +582,135 @@ button {
   color: #0051a8;
 }
 
-.reset-btn {
-  background-color: #f0f0f5;
-  color: #555555;
-  font-size: 1.1cqw;
-  margin-left: 0.3cqw; /* Extra margin to prevent accidental tap with + button */
+/* Niconico Style Flying Chat & Quick Emoji Bar */
+.chat-bar {
+  width: 95%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25cqw;
+  background-color: #e8e8ed;
+  padding: 0.3cqw 0.4cqw;
+  border-radius: 0.6cqw;
+}
+
+.emoji-quick-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.emoji-btn {
+  background-color: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 0.3cqw;
+  font-size: 0.95cqw;
+  padding: 0.15cqw 0.3cqw;
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.emoji-btn:hover {
+  transform: scale(1.2);
+  background-color: #fff0f5;
+}
+
+.emoji-btn:active {
+  transform: scale(0.9);
+}
+
+.chat-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.2cqw;
+  width: 100%;
+}
+
+.chat-input {
+  flex: 1;
+  border: 1px solid #ccc;
+  border-radius: 0.3cqw;
+  padding: 0.2cqw 0.4cqw;
+  font-size: 0.75cqw;
+  outline: none;
+}
+.chat-input:focus {
+  border-color: var(--accent-color);
+}
+
+.chat-send-btn {
+  background-color: var(--accent-color);
+  color: #ffffff;
+  border: none;
+  border-radius: 0.3cqw;
+  padding: 0.2cqw 0.5cqw;
+  font-size: 0.75cqw;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+.chat-send-btn:hover {
+  opacity: 0.9;
+}
+
+/* Niconico Danmaku Flying Chat Overlay */
+.danmaku-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 110;
+}
+
+.danmaku-item {
+  position: absolute;
+  white-space: nowrap;
+  font-weight: 800;
+  font-size: 1.8cqw;
+  color: #ffffff;
+  text-shadow: 
+    -1.5px -1.5px 0 #000, 
+     1.5px -1.5px 0 #000, 
+    -1.5px  1.5px 0 #000, 
+     1.5px  1.5px 0 #000,
+     0 3px 8px rgba(0, 0, 0, 0.7);
+  will-change: transform;
+  pointer-events: none;
+  animation: danmaku-fly 6s linear forwards;
+}
+
+@keyframes danmaku-fly {
+  0% {
+    transform: translateX(100vw);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+/* Toast Notifications */
+.toast-notification {
+  position: fixed;
+  bottom: 2cqw;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background-color: rgba(44, 44, 46, 0.92);
+  color: #ffffff;
+  padding: 0.6cqw 1.2cqw;
+  border-radius: 0.6cqw;
+  font-size: 0.85cqw;
+  font-weight: 700;
+  box-shadow: 0 0.4cqw 1cqw rgba(0, 0, 0, 0.3);
+  z-index: 999;
+  opacity: 0;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  pointer-events: none;
+}
+
+.toast-notification.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }

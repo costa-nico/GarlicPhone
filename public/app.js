@@ -75,6 +75,9 @@ document.addEventListener('DOMContentLoaded', () => {
       checkpointIndex = -1;
       eventsHistory = eventsHistory.filter(e => e.strokeId !== msg.strokeId);
       renderHistory();
+    } else if (msg.type === 'chat') {
+      spawnDanmakuMessage(msg.text, msg.name, msg.color);
+      return;
     } else if (msg.type === 'clear') {
       checkpointIndex = -1;
       eventsHistory = [];
@@ -681,6 +684,37 @@ document.addEventListener('DOMContentLoaded', () => {
       e.stopPropagation();
       setCanvasZoom(1.0);
     });
+  }
+
+  // Fullscreen Toggle for Tablets & Desktop
+  const btnFullscreen = document.getElementById('btn-fullscreen');
+  if (btnFullscreen) {
+    btnFullscreen.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        const docEl = document.documentElement;
+        if (docEl.requestFullscreen) {
+          docEl.requestFullscreen();
+        } else if (docEl.webkitRequestFullscreen) {
+          docEl.webkitRequestFullscreen();
+        }
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        }
+      }
+    });
+
+    const updateFullscreenIcon = () => {
+      const isFull = !!(document.fullscreenElement || document.webkitFullscreenElement);
+      btnFullscreen.textContent = isFull ? '✕' : '⛶';
+      btnFullscreen.title = isFull ? "전체화면 종료 (Exit Fullscreen)" : "전체화면 전환 (Fullscreen)";
+    };
+
+    document.addEventListener('fullscreenchange', updateFullscreenIcon);
+    document.addEventListener('webkitfullscreenchange', updateFullscreenIcon);
   }
 
   // Pointer Events
@@ -1306,76 +1340,134 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Save PNG Image Download
+  // Save PNG Image Download with Toast
   const btnSave = document.getElementById('btn-save');
   if (btnSave) {
     btnSave.addEventListener('click', () => {
-      // Create offscreen canvas with white background to guarantee non-black transparent PNG
       const saveCanvas = document.createElement('canvas');
       saveCanvas.width = LOGICAL_WIDTH;
       saveCanvas.height = LOGICAL_HEIGHT;
       const saveCtx = saveCanvas.getContext('2d');
       
-      // 1. Fill solid white background
       saveCtx.fillStyle = '#FFFFFF';
       saveCtx.fillRect(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT);
-      
-      // 2. Draw current drawing canvas content
       saveCtx.drawImage(canvas, 0, 0);
 
-      // 3. Trigger automatic PNG download
-      const now = new Date();
-      const timestamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
-      const filename = `GarlicPhone_${timestamp}.png`;
-
       const link = document.createElement('a');
-      link.download = filename;
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      link.download = `garlic_drawing_${timestamp}.png`;
       link.href = saveCanvas.toDataURL('image/png');
       link.click();
+      showToast("💾 고화질 PNG 이미지가 저장되었습니다!");
     });
   }
 
-  // Fullscreen Toggle for Tablets & Desktop
-  const btnFullscreen = document.getElementById('btn-fullscreen');
-  if (btnFullscreen) {
-    btnFullscreen.addEventListener('click', () => {
-      if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-        const docEl = document.documentElement;
-        if (docEl.requestFullscreen) {
-          docEl.requestFullscreen();
-        } else if (docEl.webkitRequestFullscreen) {
-          docEl.webkitRequestFullscreen();
-        }
-      } else {
-        if (document.exitFullscreen) {
-          document.exitFullscreen();
-        } else if (document.webkitExitFullscreen) {
-          document.webkitExitFullscreen();
-        }
+  // Clipboard Image Copy
+  const btnCopy = document.getElementById('btn-copy');
+  if (btnCopy) {
+    btnCopy.addEventListener('click', async () => {
+      try {
+        const saveCanvas = document.createElement('canvas');
+        saveCanvas.width = LOGICAL_WIDTH;
+        saveCanvas.height = LOGICAL_HEIGHT;
+        const saveCtx = saveCanvas.getContext('2d');
+        
+        saveCtx.fillStyle = '#FFFFFF';
+        saveCtx.fillRect(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT);
+        saveCtx.drawImage(canvas, 0, 0);
+
+        saveCanvas.toBlob(async (blob) => {
+          if (!blob) return;
+          try {
+            await navigator.clipboard.write([
+              new ClipboardItem({ 'image/png': blob })
+            ]);
+            showToast("📋 클립보드에 이미지가 복사되었습니다! (Ctrl+V로 붙여넣기)");
+          } catch(err) {
+            showToast("⚠️ 클립보드 복사 권한이 필요합니다. 이미지 다운로드(💾)를 이용해주세요.");
+          }
+        }, 'image/png');
+      } catch(err) {
+        showToast("⚠️ 클립보드 복사를 지원하지 않는 브라우저입니다.");
       }
     });
+  }
 
-    const updateFullscreenIcon = () => {
-      const isFull = !!(document.fullscreenElement || document.webkitFullscreenElement);
-      if (isFull) {
-        btnFullscreen.innerHTML = `
-          <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
-          </svg>
-        `;
-        btnFullscreen.title = "전체화면 종료 (Exit Fullscreen)";
-      } else {
-        btnFullscreen.innerHTML = `
-          <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
-          </svg>
-        `;
-        btnFullscreen.title = "전체화면 전환 (Fullscreen)";
+  // --- Toast Notifications ---
+  function showToast(text) {
+    let toast = document.querySelector('.toast-notification');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.className = 'toast-notification';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = text;
+    toast.classList.add('show');
+    setTimeout(() => {
+      toast.classList.remove('show');
+    }, 2500);
+  }
+
+  // --- Niconico Danmaku Flying Chat System ---
+  const danmakuContainer = document.getElementById('danmaku-container');
+  const chatInput = document.getElementById('chat-input');
+  const btnSendChat = document.getElementById('btn-send-chat');
+
+  function spawnDanmakuMessage(text, name, color) {
+    if (!danmakuContainer || !text) return;
+    const el = document.createElement('div');
+    el.className = 'danmaku-item';
+    
+    if (name) {
+      el.innerHTML = `<span style="color:${color || '#FF9500'}">[${escapeHtml(name)}]</span> ${escapeHtml(text)}`;
+    } else {
+      el.textContent = text;
+    }
+
+    const randomTop = Math.floor(Math.random() * 70 + 10);
+    el.style.top = `${randomTop}%`;
+
+    danmakuContainer.appendChild(el);
+
+    setTimeout(() => {
+      if (el.parentNode) {
+        el.parentNode.removeChild(el);
       }
-    };
+    }, 6200);
+  }
 
-    document.addEventListener('fullscreenchange', updateFullscreenIcon);
-    document.addEventListener('webkitfullscreenchange', updateFullscreenIcon);
+  function sendChatMessage(text) {
+    text = (text || '').trim();
+    if (!text) return;
+    const chatMsg = { type: 'chat', text, name: userName, color: userColor };
+    spawnDanmakuMessage(text, userName, userColor);
+    broadcast(chatMsg);
+  }
+
+  if (btnSendChat && chatInput) {
+    btnSendChat.addEventListener('click', () => {
+      sendChatMessage(chatInput.value);
+      chatInput.value = '';
+    });
+
+    chatInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        sendChatMessage(chatInput.value);
+        chatInput.value = '';
+      }
+    });
+  }
+
+  // Quick Emoji Buttons
+  document.querySelectorAll('.emoji-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const emoji = btn.dataset.emoji;
+      sendChatMessage(emoji);
+    });
+  });
+
+  function escapeHtml(str) {
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
   window.addEventListener('beforeunload', () => {
