@@ -567,16 +567,93 @@ document.addEventListener('DOMContentLoaded', () => {
     updateCanvasTransform();
   }
 
+  // --- 360-Degree Interactive Analog Joystick Knob ---
+  const joystickBase = document.getElementById('joystick-base');
+  const joystickKnob = document.getElementById('joystick-knob');
+  let isJoystickDragging = false;
+  let joystickCenter = { x: 0, y: 0 };
+  let joystickAnimationId = null;
+  let joystickVector = { x: 0, y: 0 };
+
+  function processJoystickPan() {
+    if (isJoystickDragging && canvasScale > 1.0) {
+      const speed = 10 * (canvasScale / 2);
+      canvasPanX += joystickVector.x * speed;
+      canvasPanY += joystickVector.y * speed;
+      updateCanvasTransform();
+      joystickAnimationId = requestAnimationFrame(processJoystickPan);
+    } else {
+      joystickAnimationId = null;
+    }
+  }
+
+  function startJoystickDrag(e) {
+    if (!joystickBase || !joystickKnob) return;
+    e.preventDefault();
+    e.stopPropagation();
+    isJoystickDragging = true;
+
+    const rect = joystickBase.getBoundingClientRect();
+    joystickCenter = {
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2
+    };
+
+    try { joystickBase.setPointerCapture(e.pointerId); } catch(err) {}
+    updateJoystickKnob(e);
+
+    if (!joystickAnimationId) {
+      joystickAnimationId = requestAnimationFrame(processJoystickPan);
+    }
+  }
+
+  function updateJoystickKnob(e) {
+    if (!isJoystickDragging) return;
+    const dx = e.clientX - joystickCenter.x;
+    const dy = e.clientY - joystickCenter.y;
+    const dist = Math.hypot(dx, dy);
+
+    const baseRect = joystickBase.getBoundingClientRect();
+    const maxRadius = baseRect.width / 2 - 4; // Constrain knob within base
+
+    let clampedX = dx;
+    let clampedY = dy;
+    if (dist > maxRadius) {
+      clampedX = (dx / dist) * maxRadius;
+      clampedY = (dy / dist) * maxRadius;
+    }
+
+    joystickKnob.style.transform = `translate(${clampedX}px, ${clampedY}px)`;
+    joystickKnob.style.transition = 'none';
+
+    joystickVector = {
+      x: maxRadius > 0 ? clampedX / maxRadius : 0,
+      y: maxRadius > 0 ? clampedY / maxRadius : 0
+    };
+  }
+
+  function stopJoystickDrag(e) {
+    if (!isJoystickDragging) return;
+    isJoystickDragging = false;
+    joystickVector = { x: 0, y: 0 };
+    if (joystickKnob) {
+      joystickKnob.style.transition = 'transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+      joystickKnob.style.transform = 'translate(0px, 0px)';
+    }
+    try { joystickBase.releasePointerCapture(e.pointerId); } catch(err) {}
+  }
+
+  if (joystickBase) {
+    joystickBase.addEventListener('pointerdown', startJoystickDrag);
+    joystickBase.addEventListener('pointermove', updateJoystickKnob);
+    joystickBase.addEventListener('pointerup', stopJoystickDrag);
+    joystickBase.addEventListener('pointercancel', stopJoystickDrag);
+  }
+
   const btnZoomIn = document.getElementById('btn-zoom-in');
   const btnZoomOut = document.getElementById('btn-zoom-out');
   const btnZoomReset = document.getElementById('btn-zoom-reset');
   const zoomLevelText = document.getElementById('zoom-level-text');
-
-  const btnPanUp = document.getElementById('btn-pan-up');
-  const btnPanDown = document.getElementById('btn-pan-down');
-  const btnPanLeft = document.getElementById('btn-pan-left');
-  const btnPanRight = document.getElementById('btn-pan-right');
-  const btnPanReset = document.getElementById('btn-pan-reset');
 
   if (btnZoomIn) {
     btnZoomIn.addEventListener('click', (e) => {
@@ -603,27 +680,6 @@ document.addEventListener('DOMContentLoaded', () => {
     zoomLevelText.addEventListener('click', (e) => {
       e.stopPropagation();
       setCanvasZoom(1.0);
-    });
-  }
-
-  if (btnPanUp) {
-    btnPanUp.addEventListener('click', (e) => { e.stopPropagation(); panCanvas(0, 1); });
-  }
-  if (btnPanDown) {
-    btnPanDown.addEventListener('click', (e) => { e.stopPropagation(); panCanvas(0, -1); });
-  }
-  if (btnPanLeft) {
-    btnPanLeft.addEventListener('click', (e) => { e.stopPropagation(); panCanvas(1, 0); });
-  }
-  if (btnPanRight) {
-    btnPanRight.addEventListener('click', (e) => { e.stopPropagation(); panCanvas(-1, 0); });
-  }
-  if (btnPanReset) {
-    btnPanReset.addEventListener('click', (e) => {
-      e.stopPropagation();
-      canvasPanX = 0;
-      canvasPanY = 0;
-      updateCanvasTransform();
     });
   }
 

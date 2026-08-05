@@ -393,6 +393,8 @@ button {
   background-color: var(--canvas-bg);
   position: relative;
   border-left: 0.2cqw solid #ddd;
+  overflow: hidden; /* Clips zoomed canvas inside container so it never overlaps toolbar or headers! */
+  z-index: 1;
 }
 
 #drawing-canvas, #active-canvas {
@@ -426,85 +428,74 @@ button {
   transition: width 0.05s ease, height 0.05s ease;
 }
 
-/* Floating Zoom & Pan Controls Widget */
-.zoom-controls {
-  position: absolute;
-  bottom: 1cqw;
-  right: 1cqw;
+/* Integrated Navigation Block inside Left Toolbar */
+.nav-controls-block {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.5cqw;
-  background-color: rgba(44, 44, 46, 0.88);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  padding: 0.4cqw 0.6cqw;
-  border-radius: 0.8cqw;
-  z-index: 120;
-  box-shadow: 0 0.3cqw 0.8cqw rgba(0, 0, 0, 0.3);
-  user-select: none;
+  width: 95%;
+  background-color: rgba(230, 230, 235, 0.7);
+  padding: 0.3cqw 0.5cqw;
+  border-radius: 0.6cqw;
+  border: 1px solid var(--border-color);
 }
 
-.pan-dpad {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.15cqw;
-}
-
-.pan-row {
-  display: flex;
-  align-items: center;
-  gap: 0.15cqw;
-}
-
-.pan-btn {
-  background-color: rgba(255, 255, 255, 0.12);
-  color: #ffffff;
-  border: none;
-  width: 1.3cqw;
-  height: 1.3cqw;
-  border-radius: 0.3cqw;
-  font-size: 0.75cqw;
+/* 360-Degree Analog Joystick Knob */
+.joystick-wrapper {
   display: flex;
   justify-content: center;
   align-items: center;
-  cursor: pointer;
-  transition: background-color 0.15s ease, transform 0.1s ease;
 }
 
-.pan-btn:hover {
-  background-color: rgba(255, 255, 255, 0.3);
-  transform: scale(1.1);
+.joystick-base {
+  width: 3cqw;
+  height: 3cqw;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(220, 220, 225, 0.9) 0%, rgba(170, 170, 175, 0.95) 100%);
+  border: 2px solid #ffffff;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.25), 0 2px 4px rgba(0, 0, 0, 0.12);
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  touch-action: none;
+  cursor: grab;
 }
 
-.pan-btn:active {
-  transform: scale(0.9);
+.joystick-base:active {
+  cursor: grabbing;
 }
 
-.pan-center-btn {
-  font-size: 0.55cqw;
-  background-color: rgba(255, 255, 255, 0.2);
+.joystick-knob {
+  width: 1.5cqw;
+  height: 1.5cqw;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #007AFF 0%, #0051a8 100%);
+  border: 1.5px solid #ffffff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin-top: -0.75cqw;
+  margin-left: -0.75cqw;
+  transition: transform 0.05s ease-out;
+  pointer-events: none;
 }
 
-.zoom-divider {
-  width: 1px;
-  height: 2.2cqw;
-  background-color: rgba(255, 255, 255, 0.2);
-  margin: 0 0.2cqw;
-}
-
-.zoom-slider-group {
+/* Spaced-Out Zoom Toolbar Group (Preventing accidental tablet misclicks) */
+.zoom-toolbar-group {
   display: flex;
   align-items: center;
-  gap: 0.3cqw;
+  gap: 0.5cqw; /* Clear spacing between buttons */
 }
 
 .zoom-btn {
-  background-color: rgba(255, 255, 255, 0.15);
-  color: #ffffff;
-  border: none;
-  width: 1.8cqw;
-  height: 1.8cqw;
+  background-color: var(--button-bg);
+  color: #333333;
+  border: 1px solid var(--border-color);
+  min-width: 2.2cqw;
+  height: 2.2cqw;
   border-radius: 0.4cqw;
   font-size: 1.1cqw;
   font-weight: 700;
@@ -512,32 +503,35 @@ button {
   justify-content: center;
   align-items: center;
   cursor: pointer;
-  transition: background-color 0.15s ease, transform 0.1s ease;
+  box-shadow: 0 0.1cqw 0.2cqw rgba(0, 0, 0, 0.08);
+  transition: all 0.15s ease;
 }
 
 .zoom-btn:hover {
-  background-color: rgba(255, 255, 255, 0.3);
-  transform: scale(1.05);
+  background-color: var(--button-hover-bg);
+  transform: scale(1.06);
 }
 
 .zoom-btn:active {
-  transform: scale(0.95);
+  transform: scale(0.94);
 }
 
 .zoom-text {
-  color: #ffffff;
-  font-size: 0.75cqw;
+  font-size: 0.8cqw;
   font-weight: 700;
+  color: var(--accent-color);
   padding: 0 0.4cqw;
   cursor: pointer;
-  min-width: 3cqw;
+  min-width: 3.2cqw;
   text-align: center;
 }
 .zoom-text:hover {
-  color: #5AC8FA;
+  color: #0051a8;
 }
 
 .reset-btn {
-  font-size: 0.9cqw;
-  background-color: rgba(255, 255, 255, 0.08);
+  background-color: #f0f0f5;
+  color: #555555;
+  font-size: 1.1cqw;
+  margin-left: 0.3cqw; /* Extra margin to prevent accidental tap with + button */
 }

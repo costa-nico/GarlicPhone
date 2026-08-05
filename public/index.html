@@ -89,6 +89,22 @@
           <button class="color-btn" data-color="#FFE4B5" style="background-color: #FFE4B5;"></button>
         </div>
         
+        <!-- Integrated Navigation (Zoom & 360 Analog Joystick Knob) -->
+        <div class="nav-controls-block" title="화면 이동 360도 조이스틱 및 확대/축소">
+          <div class="joystick-wrapper" title="360도 드래그 캔버스 이동 조이스틱">
+            <div id="joystick-base" class="joystick-base">
+              <div id="joystick-knob" class="joystick-knob"></div>
+            </div>
+          </div>
+
+          <div class="zoom-toolbar-group">
+            <button id="btn-zoom-out" class="zoom-btn" title="축소 (-)">-</button>
+            <span id="zoom-level-text" class="zoom-text" title="현재 확대율 (클릭 시 100% 원위치)">100%</span>
+            <button id="btn-zoom-in" class="zoom-btn" title="확대 (+)">+</button>
+            <button id="btn-zoom-reset" class="zoom-btn reset-btn" title="100% 원위치 리셋">⟲</button>
+          </div>
+        </div>
+
         <div class="user-profile-bar" title="프로필 설정 및 실시간 접속자 수">
           <div class="user-count-badge" title="현재 방 접속자 수">
             <span class="pulse-dot"></span>
@@ -116,28 +132,6 @@
       <canvas id="drawing-canvas"></canvas>
       <canvas id="active-canvas"></canvas>
       <div id="brush-preview" class="brush-preview"></div>
-
-      <!-- Zoom & Pan Controls Widget -->
-      <div class="zoom-controls" title="캔버스 확대/축소 및 방향 이동 컨트롤">
-        <div class="pan-dpad" title="확대 상태에서 캔버스 이동">
-          <button id="btn-pan-up" class="pan-btn" title="위로 이동">▲</button>
-          <div class="pan-row">
-            <button id="btn-pan-left" class="pan-btn" title="왼쪽으로 이동">◀</button>
-            <button id="btn-pan-reset" class="pan-btn pan-center-btn" title="화면 중앙으로 원위치">●</button>
-            <button id="btn-pan-right" class="pan-btn" title="오른쪽으로 이동">▶</button>
-          </div>
-          <button id="btn-pan-down" class="pan-btn" title="아래로 이동">▼</button>
-        </div>
-
-        <div class="zoom-divider"></div>
-
-        <div class="zoom-slider-group">
-          <button id="btn-zoom-out" class="zoom-btn" title="축소 (-)">-</button>
-          <span id="zoom-level-text" class="zoom-text" title="현재 확대율 (클릭 시 100% 원위치)">100%</span>
-          <button id="btn-zoom-in" class="zoom-btn" title="확대 (+)">+</button>
-          <button id="btn-zoom-reset" class="zoom-btn reset-btn" title="100% 원위치 리셋">⟲</button>
-        </div>
-      </div>
     </main>
   </div>
   
