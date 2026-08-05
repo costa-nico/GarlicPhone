@@ -578,8 +578,8 @@ document.addEventListener('DOMContentLoaded', () => {
   function processJoystickPan() {
     if (isJoystickDragging && canvasScale > 1.0) {
       const speed = 10 * (canvasScale / 2);
-      canvasPanX += joystickVector.x * speed;
-      canvasPanY += joystickVector.y * speed;
+      canvasPanX -= joystickVector.x * speed; // INVERTED direction for intuitive camera panning!
+      canvasPanY -= joystickVector.y * speed; // INVERTED direction for intuitive camera panning!
       updateCanvasTransform();
       joystickAnimationId = requestAnimationFrame(processJoystickPan);
     } else {
@@ -1178,8 +1178,66 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Colors
+  // --- Dynamic Color Palette Management ---
+  const defaultColors = ['#000000', '#555555', '#AAAAAA', '#FFFFFF', '#FF3B30', '#FF9500', '#FFCC00', '#4CD964', '#5AC8FA', '#007AFF', '#5856D6', '#FF2D55', '#8B4513', '#D2691E', '#F4A460', '#FFE4B5'];
+  
+  let userPalette = defaultColors;
+  try {
+    const saved = localStorage.getItem('garlic_custom_palette');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        userPalette = parsed;
+      }
+    }
+  } catch(e) {}
+
+  const paletteGrid = document.getElementById('palette-grid');
+  const btnAddColor = document.getElementById('btn-add-color');
+  const btnRemoveColor = document.getElementById('btn-remove-color');
   const customColorPicker = document.getElementById('current-color-picker');
+
+  function renderPalette() {
+    if (!paletteGrid) return;
+    paletteGrid.innerHTML = '';
+    
+    userPalette.forEach(hex => {
+      const btn = document.createElement('button');
+      btn.className = 'color-btn';
+      btn.dataset.color = hex.toUpperCase();
+      btn.style.backgroundColor = hex;
+      if (currentColor.toUpperCase() === hex.toUpperCase()) {
+        btn.classList.add('active');
+      }
+      
+      btn.addEventListener('click', () => {
+        currentColor = hex.toUpperCase();
+        updateColorUI(currentColor);
+        if (currentTool === 'eraser') setActiveTool('pen', btnPen);
+      });
+      
+      paletteGrid.appendChild(btn);
+    });
+
+    localStorage.setItem('garlic_custom_palette', JSON.stringify(userPalette));
+  }
+
+  function updateColorUI(hex) {
+    hex = hex.toUpperCase();
+    if (customColorPicker) customColorPicker.value = hex;
+    localStorage.setItem('garlic_user_color', hex);
+    
+    if (paletteGrid) {
+      paletteGrid.querySelectorAll('.color-btn').forEach(btn => {
+        if (btn.dataset.color === hex) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+    }
+  }
+
   if (customColorPicker) {
     customColorPicker.addEventListener('input', (e) => {
       currentColor = e.target.value.toUpperCase();
@@ -1188,16 +1246,34 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  const colorBtns = document.querySelectorAll('.color-btn');
-  colorBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      currentColor = btn.dataset.color.toUpperCase();
-      updateColorUI(currentColor);
-      if (currentTool === 'eraser') {
-        setActiveTool('pen', btnPen);
+  if (btnAddColor) {
+    btnAddColor.addEventListener('click', () => {
+      const colorToAdd = currentColor.toUpperCase();
+      if (!userPalette.includes(colorToAdd)) {
+        userPalette.push(colorToAdd);
+        renderPalette();
       }
     });
-  });
+  }
+
+  if (btnRemoveColor) {
+    btnRemoveColor.addEventListener('click', () => {
+      if (userPalette.length <= 1) {
+        alert("팔레트에는 최소 1개 이상의 색상이 필요합니다.");
+        return;
+      }
+      const colorToRemove = currentColor.toUpperCase();
+      userPalette = userPalette.filter(c => c.toUpperCase() !== colorToRemove);
+      if (userPalette.length > 0) {
+        currentColor = userPalette[userPalette.length - 1];
+      }
+      renderPalette();
+      updateColorUI(currentColor);
+    });
+  }
+
+  renderPalette();
+  updateColorUI(currentColor);
 
   // Size
   const sizeSlider = document.getElementById('size-slider');
