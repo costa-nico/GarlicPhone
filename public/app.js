@@ -529,8 +529,98 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // --- Canvas Zoom & Pan Engine (2-Finger Touch Pinch-Zoom) ---
+  let canvasScale = 1.0;
+  let canvasPanX = 0;
+  let canvasPanY = 0;
+
+  const activePointers = new Map(); // pointerId -> { x, y }
+  let initialPinchDistance = 0;
+  let initialScale = 1.0;
+  let initialPan = { x: 0, y: 0 };
+  let pinchCenter = { x: 0, y: 0 };
+  let isPinchingOrPanning = false;
+
+  function updateCanvasTransform() {
+    const transformStr = `translate(${canvasPanX}px, ${canvasPanY}px) scale(${canvasScale})`;
+    canvas.style.transform = transformStr;
+    activeCanvas.style.transform = transformStr;
+    canvas.style.transformOrigin = '0 0';
+    activeCanvas.style.transformOrigin = '0 0';
+  }
+
+  function handlePointerDownPinch(e) {
+    activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    if (activePointers.size >= 2) {
+      if (isDrawing) {
+        isDrawing = false;
+        if (currentStrokeId && activeStrokes[currentStrokeId]) {
+          delete activeStrokes[currentStrokeId];
+          drawActiveStrokes();
+        }
+      }
+
+      isPinchingOrPanning = true;
+
+      const pts = Array.from(activePointers.values());
+      const p1 = pts[0];
+      const p2 = pts[1];
+
+      initialPinchDistance = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+      initialScale = canvasScale;
+      initialPan = { x: canvasPanX, y: canvasPanY };
+      pinchCenter = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
+    }
+  }
+
+  function handlePointerMovePinch(e) {
+    if (!activePointers.has(e.pointerId)) return false;
+    activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    if (activePointers.size >= 2) {
+      isPinchingOrPanning = true;
+      const pts = Array.from(activePointers.values());
+      const p1 = pts[0];
+      const p2 = pts[1];
+
+      const currentDistance = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+      if (initialPinchDistance > 0) {
+        const scaleFactor = currentDistance / initialPinchDistance;
+        let newScale = Math.min(4.0, Math.max(1.0, initialScale * scaleFactor));
+        
+        const currentCenter = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
+        const deltaX = currentCenter.x - pinchCenter.x;
+        const deltaY = currentCenter.y - pinchCenter.y;
+
+        if (newScale === 1.0) {
+          canvasScale = 1.0;
+          canvasPanX = 0;
+          canvasPanY = 0;
+        } else {
+          canvasScale = newScale;
+          canvasPanX = initialPan.x + deltaX;
+          canvasPanY = initialPan.y + deltaY;
+        }
+        updateCanvasTransform();
+      }
+      return true;
+    }
+    return false;
+  }
+
+  function handlePointerUpPinch(e) {
+    activePointers.delete(e.pointerId);
+    if (activePointers.size < 2) {
+      isPinchingOrPanning = false;
+    }
+  }
+
   // Pointer Events
   function startDrawing(e) {
+    handlePointerDownPinch(e);
+    if (activePointers.size >= 2 || isPinchingOrPanning) return;
+
     const isStylusBarrel = checkStylusBarrelButton(e);
     if (!isStylusBarrel && e.button !== 0 && e.button !== undefined) return;
     
@@ -596,6 +686,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let lastCursorSend = 0;
   function draw(e) {
+    if (handlePointerMovePinch(e)) return;
+    if (isPinchingOrPanning) return;
+
     // Broadcast cursor position (Throttled to 20 times a second to save bandwidth)
     const normPos = getNormalizedCursorPos(e);
     if (normPos.x >= 0 && normPos.x <= 1 && normPos.y >= 0 && normPos.y <= 1) {
@@ -665,6 +758,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function stopDrawing(e) {
+    handlePointerUpPinch(e);
+    if (isPinchingOrPanning) return;
     if (!isDrawing) return;
     
     if (currentTool === 'lasso') {
