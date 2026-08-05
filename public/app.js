@@ -1178,30 +1178,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // --- Dynamic Color Palette Management ---
-  const defaultColors = ['#000000', '#555555', '#AAAAAA', '#FFFFFF', '#FF3B30', '#FF9500', '#FFCC00', '#4CD964', '#5AC8FA', '#007AFF', '#5856D6', '#FF2D55', '#8B4513', '#D2691E', '#F4A460', '#FFE4B5'];
-  
-  let userPalette = defaultColors;
-  try {
-    const saved = localStorage.getItem('garlic_custom_palette');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        userPalette = parsed;
-      }
-    }
-  } catch(e) {}
+  // --- Fixed 3x6 Color Palette ---
+  const fixedPaletteColors = [
+    '#000000', '#555555', '#AAAAAA', '#FFFFFF', '#8B4513', '#D2691E',
+    '#FF3B30', '#FF9500', '#FFCC00', '#4CD964', '#28CD41', '#00C7BE',
+    '#5AC8FA', '#007AFF', '#5856D6', '#AF52DE', '#FF2D55', '#FF6B81'
+  ];
 
   const paletteGrid = document.getElementById('palette-grid');
-  const btnAddColor = document.getElementById('btn-add-color');
-  const btnRemoveColor = document.getElementById('btn-remove-color');
   const customColorPicker = document.getElementById('current-color-picker');
 
   function renderPalette() {
     if (!paletteGrid) return;
     paletteGrid.innerHTML = '';
     
-    userPalette.forEach(hex => {
+    fixedPaletteColors.forEach(hex => {
       const btn = document.createElement('button');
       btn.className = 'color-btn';
       btn.dataset.color = hex.toUpperCase();
@@ -1218,8 +1209,6 @@ document.addEventListener('DOMContentLoaded', () => {
       
       paletteGrid.appendChild(btn);
     });
-
-    localStorage.setItem('garlic_custom_palette', JSON.stringify(userPalette));
   }
 
   function updateColorUI(hex) {
@@ -1243,32 +1232,6 @@ document.addEventListener('DOMContentLoaded', () => {
       currentColor = e.target.value.toUpperCase();
       updateColorUI(currentColor);
       if (currentTool === 'eraser') setActiveTool('pen', btnPen);
-    });
-  }
-
-  if (btnAddColor) {
-    btnAddColor.addEventListener('click', () => {
-      const colorToAdd = currentColor.toUpperCase();
-      if (!userPalette.includes(colorToAdd)) {
-        userPalette.push(colorToAdd);
-        renderPalette();
-      }
-    });
-  }
-
-  if (btnRemoveColor) {
-    btnRemoveColor.addEventListener('click', () => {
-      if (userPalette.length <= 1) {
-        alert("팔레트에는 최소 1개 이상의 색상이 필요합니다.");
-        return;
-      }
-      const colorToRemove = currentColor.toUpperCase();
-      userPalette = userPalette.filter(c => c.toUpperCase() !== colorToRemove);
-      if (userPalette.length > 0) {
-        currentColor = userPalette[userPalette.length - 1];
-      }
-      renderPalette();
-      updateColorUI(currentColor);
     });
   }
 

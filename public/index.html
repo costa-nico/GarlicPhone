@@ -66,15 +66,9 @@
       
       <div class="toolbar-bottom">
         <div class="palette-container">
-          <div class="palette-header">
-            <input type="color" id="current-color-picker" class="current-color-display" value="#000000" title="현재 색상 (클릭 시 커스텀 컬러 피커)">
-            <div class="palette-actions">
-              <button id="btn-add-color" class="palette-action-btn" title="현재 색상을 팔레트에 추가">+</button>
-              <button id="btn-remove-color" class="palette-action-btn" title="선택한 팔레트 색상 삭제">-</button>
-            </div>
-          </div>
+          <input type="color" id="current-color-picker" class="current-color-display-wide" value="#000000" title="현재 선택된 색상 (클릭 시 커스텀 컬러 피커)">
           <div id="palette-grid" class="palette-grid">
-            <!-- Dynamically populated from JS -->
+            <!-- Dynamically populated from JS (3x6 fixed palette) -->
           </div>
         </div>
         
