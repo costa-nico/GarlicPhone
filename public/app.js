@@ -292,10 +292,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderRemoteCursors() {
     const now = Date.now();
+    updateOnlineUserCount();
     Object.keys(remoteCursors).forEach(id => {
       const cur = remoteCursors[id];
       if (now - cur.lastSeen > 3000) {
         delete remoteCursors[id];
+        updateOnlineUserCount();
         return;
       }
 
@@ -1123,71 +1125,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (brushPreview) brushPreview.style.display = 'none';
   });
 
-  // --- Remote Cursors UI ---
-  const cursorContainer = document.createElement('div');
-  cursorContainer.id = 'cursor-container';
-  cursorContainer.style.position = 'absolute';
-  cursorContainer.style.top = '0';
-  cursorContainer.style.left = '0';
-  cursorContainer.style.width = '100%';
-  cursorContainer.style.height = '100%';
-  cursorContainer.style.pointerEvents = 'none';
-  canvas.parentElement.appendChild(cursorContainer);
-  canvas.parentElement.style.position = 'relative';
-
-  const remoteCursors = {}; // id -> HTMLElement
-
+  // --- Online User Count ---
   function updateOnlineUserCount() {
     const el = document.getElementById('online-user-count');
     if (!el) return;
     const remoteCount = Object.keys(remoteCursors).length;
     el.textContent = remoteCount + 1; // 1 (myself) + active remote users
-  }
-
-  function updateRemoteCursor(id, data) {
-    const curColor = data.color || '#FF3B30';
-    if (!remoteCursors[id]) {
-      const el = document.createElement('div');
-      el.style.position = 'absolute';
-      el.style.transition = 'transform 0.05s linear';
-      el.style.zIndex = '50';
-      el.innerHTML = `
-        <div style="position:relative;">
-          <svg class="remote-cursor-svg" width="24" height="24" viewBox="0 0 24 24" fill="none" style="position:absolute; left:-12px; top:-12px; filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.3));">
-            <path class="cursor-path" d="M5.5 3.21V20.8c0 .45.54.67.85.35l4.86-4.86a.5.5 0 0 1 .35-.15h6.87c.45 0 .67-.54.35-.85L6.35 2.85a.5.5 0 0 0-.85.35Z" fill="${curColor}" stroke="white" stroke-width="2"/>
-          </svg>
-          <div class="remote-name-tag" style="position:absolute; left:0px; top:12px; background:${curColor}; color:white; padding:2px 6px; border-radius:4px; font-size:12px; font-weight:bold; white-space:nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
-            ${data.name}
-          </div>
-        </div>
-      `;
-      cursorContainer.appendChild(el);
-      remoteCursors[id] = el;
-      updateOnlineUserCount();
-    } else {
-      // Dynamic updates if nickname or color changed
-      const path = remoteCursors[id].querySelector('.cursor-path');
-      const tag = remoteCursors[id].querySelector('.remote-name-tag');
-      if (path) path.setAttribute('fill', curColor);
-      if (tag) {
-        tag.style.background = curColor;
-        tag.textContent = data.name;
-      }
-    }
-    
-    // Position via CSS transform based on normalized coordinates
-    const rect = canvas.getBoundingClientRect();
-    const x = data.pos.x * rect.width;
-    const y = data.pos.y * rect.height;
-    remoteCursors[id].style.transform = `translate(${x}px, ${y}px)`;
-  }
-
-  function removeRemoteCursor(id) {
-    if (remoteCursors[id]) {
-      remoteCursors[id].remove();
-      delete remoteCursors[id];
-      updateOnlineUserCount();
-    }
   }
 
   // --- UI Logic ---
