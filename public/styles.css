@@ -159,16 +159,16 @@ body {
 .toolbar-bottom {
   display: flex;
   flex-direction: column;
-  gap: 1cqw;
-  flex: 1; /* Take up any remaining space naturally */
-  justify-content: start;
-  align-items: center; /* Center the narrower grid */
+  gap: 0.3cqw;
+  flex: 1; /* Take up remaining space naturally */
+  justify-content: flex-start;
+  align-items: center; /* Center elements */
 }
 
 .palette-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0.3cqw;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.2cqw;
   width: 95%;
 }
 
@@ -433,11 +433,11 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5cqw;
+  gap: 0.4cqw;
   width: 95%;
   background-color: rgba(230, 230, 235, 0.7);
-  padding: 0.3cqw 0.5cqw;
-  border-radius: 0.6cqw;
+  padding: 0.2cqw 0.4cqw;
+  border-radius: 0.5cqw;
   border: 1px solid var(--border-color);
 }
 
@@ -449,11 +449,11 @@ button {
 }
 
 .joystick-base {
-  width: 3cqw;
-  height: 3cqw;
+  width: 2.3cqw;
+  height: 2.3cqw;
   border-radius: 50%;
   background: radial-gradient(circle, rgba(220, 220, 225, 0.9) 0%, rgba(170, 170, 175, 0.95) 100%);
-  border: 2px solid #ffffff;
+  border: 1.5px solid #ffffff;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.25), 0 2px 4px rgba(0, 0, 0, 0.12);
   position: relative;
   display: flex;
@@ -468,17 +468,17 @@ button {
 }
 
 .joystick-knob {
-  width: 1.5cqw;
-  height: 1.5cqw;
+  width: 1.1cqw;
+  height: 1.1cqw;
   border-radius: 50%;
   background: linear-gradient(135deg, #007AFF 0%, #0051a8 100%);
-  border: 1.5px solid #ffffff;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  border: 1px solid #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   position: absolute;
   top: 50%;
   left: 50%;
-  margin-top: -0.75cqw;
-  margin-left: -0.75cqw;
+  margin-top: -0.55cqw;
+  margin-left: -0.55cqw;
   transition: transform 0.05s ease-out;
   pointer-events: none;
 }
@@ -487,17 +487,17 @@ button {
 .zoom-toolbar-group {
   display: flex;
   align-items: center;
-  gap: 0.5cqw; /* Clear spacing between buttons */
+  gap: 0.4cqw; /* Clear spacing between buttons */
 }
 
 .zoom-btn {
   background-color: var(--button-bg);
   color: #333333;
   border: 1px solid var(--border-color);
-  min-width: 2.2cqw;
-  height: 2.2cqw;
+  min-width: 1.8cqw;
+  height: 1.8cqw;
   border-radius: 0.4cqw;
-  font-size: 1.1cqw;
+  font-size: 1cqw;
   font-weight: 700;
   display: flex;
   justify-content: center;
